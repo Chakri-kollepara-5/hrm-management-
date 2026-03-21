@@ -46,7 +46,7 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
     { id: 'admin', icon: <LayoutDashboard />, label: "Admin Dashboard", roles: ['admin', 'folks_head'] },
     { id: 'devotees', icon: <User />, label: "Devotees", roles: ['admin', 'folks_head'] },
     { id: 'events', icon: <Calendar />, label: "Event Management", roles: ['admin', 'folks_head', 'devotee'] },
-    { id: 'sadhana', icon: <TrendingUp />, label: "Sadhana Tracker", roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'dashboard', icon: <TrendingUp />, label: "Sadhana Tracker", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home />, label: "Accommodation", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'attendance', icon: <CheckSquare />, label: "Attendance", roles: ['admin', 'folks_head'] },
   ]
@@ -59,17 +59,21 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
       animate={{ width: isOpen ? 260 : 80 }}
       className="fixed left-0 top-0 h-full bg-white border-r border-saffron/10 z-50 overflow-hidden shadow-premium"
     >
-      <div className="p-6 flex items-center gap-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-saffron to-gold rounded-xl flex items-center justify-center text-white shadow-lg shrink-0">
-          <span className="text-xl font-bold font-poppins">🕉️</span>
+      <div className="p-6 flex items-center gap-4 overflow-hidden">
+        <div className="w-10 h-10 shrink-0">
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="w-full h-full object-contain filter sepia saturate-[6] hue-rotate-[-30deg] drop-shadow-[0_0_5px_rgba(255,153,51,0.2)]" 
+          />
         </div>
         {isOpen && (
           <motion.span 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="font-bold text-xl text-saffron-dark whitespace-nowrap"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="font-black text-xl bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent whitespace-nowrap"
           >
-            Devotee Hub
+            Folkvizag
           </motion.span>
         )}
       </div>

@@ -14,7 +14,7 @@ import UserRoleGuard from './components/auth/UserRoleGuard'
 
 function App() {
   const { user, loading } = useAuth()
-  const [activeTab, setActiveTab] = useState('sadhana')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [showSplash, setShowSplash] = useState(() => {
     return !localStorage.getItem('fast_load_cache');
   });
@@ -23,10 +23,12 @@ function App() {
   });
 
   useEffect(() => {
-    if (user && (user.role === 'folks_head' || user.role === 'admin')) {
-      setActiveTab('admin')
-    } else {
-      setActiveTab('sadhana')
+    if (user) {
+      if (user.role === 'folks_head' || user.role === 'admin') {
+        setActiveTab('admin')
+      } else {
+        setActiveTab('dashboard')
+      }
     }
   }, [user]);
 
@@ -64,7 +66,7 @@ function App() {
         return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><Devotees /></UserRoleGuard>
       case 'events': 
         return <Events />
-      case 'sadhana': 
+      case 'dashboard': 
         return <SadhanaTracker />
       case 'accommodation': 
         return <Accommodation />

@@ -30,12 +30,12 @@ const Navbar = ({ setActiveTab }) => {
   return (
     <header className="h-20 bg-white/50 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between border-b border-saffron/10 transition-all duration-500">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saffron/10 to-gold/10 rounded-2xl border border-saffron/20 group hover:shadow-md transition-all">
-          <Award className="text-saffron group-hover:rotate-12 transition-transform" size={20} />
-          <div>
-            <span className="block text-[8px] font-black text-gray-400 tracking-[0.2em] leading-none uppercase">Current Quality</span>
-            <span className="text-xs font-bold text-saffron-dark">Best (Premium) View</span>
-          </div>
+        <div className="flex items-center drop-shadow-sm hover:drop-shadow-md transition-all duration-300">
+          <img 
+            src="/logo.png" 
+            alt="Folkvizag Logo" 
+            className="h-12 w-auto object-contain hover:scale-[1.02] transition-transform cursor-pointer filter sepia saturate-[6] hue-rotate-[-30deg] drop-shadow-[0_0_8px_rgba(255,153,51,0.2)]" 
+          />
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { auth, db } from '../lib/firebase'
 import { 
-  Calendar, MapPin, Tag, Users, ArrowRight, Loader2, Plus, X, Clock, Image as ImageIcon, CheckCircle2, XCircle
+  Calendar, MapPin, Tag, Users, ArrowRight, Loader2, Plus, X, Clock, Image as ImageIcon, CheckCircle2, XCircle, Filter, Sparkles, Megaphone
 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -20,13 +20,6 @@ const Events = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
-  
-  useEffect(() => {
-    if (window.location.hash === '#new') {
-      setIsModalOpen(true);
-      window.location.hash = ''; // Clear it out so it doesn't infinite loop on refresh
-    }
-  }, []);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -46,20 +39,20 @@ const Events = () => {
       title: 'Vrindavan Kartik Yatra 2026',
       date: 'Oct 20 - Nov 19, 2026',
       location: 'Vrindavan, UP',
-      category: 'Yatra',
+      category: 'Yatras',
       attendees: '450+',
-      img: 'https://picsum.photos/seed/yatra/800/400',
-      description: 'A spiritual journey to the holy land of Vrindavan during the auspicious month of Kartik.'
+      img: 'https://images.unsplash.com/photo-1545127398-14699f92334b?auto=format&fit=crop&q=80&w=800',
+      description: 'A spiritual journey to the holy land of Vrindavan during the auspicious month of Kartik. Experience ecstatic kirtans and deep parikramas.'
     },
     {
       id: 'mock2',
       title: 'Maha Abhishek Festival',
-      date: 'August 15, 2026',
+      date: 'Aug 15, 2026',
       location: 'Main Temple Hall',
       category: 'Other',
       attendees: '1200+',
-      img: 'https://picsum.photos/seed/festival/800/400',
-      description: 'Grand bathing ceremony of their Lordships with sacred substances and ecstatic kirtan.'
+      img: 'https://images.unsplash.com/photo-1560930950-5cc60f86a395?auto=format&fit=crop&q=80&w=800',
+      description: 'Grand bathing ceremony of their Lordships with sacred substances and ecstatic kirtan. A day of divine joy.'
     }
   ]
 
@@ -78,14 +71,13 @@ const Events = () => {
         hour: 'numeric', minute: '2-digit'
       });
 
-      const eventRef = await addDoc(collection(db, 'events'), {
+      await addDoc(collection(db, 'events'), {
         ...formData,
         date: formattedDate,
         groupId: auth.currentUser?.uid || 'system',
         createdAt: serverTimestamp()
       });
       
-      // Broadcast system-wide notification
       await addDoc(collection(db, 'notifications'), {
         type: 'new_event',
         title: `New Event: ${formData.title}`,
@@ -97,13 +89,8 @@ const Events = () => {
       
       setIsModalOpen(false);
       setFormData({
-        title: '',
-        date: '',
-        location: '',
-        category: 'Retreats',
-        description: '',
-        img: 'https://picsum.photos/seed/temple/800/400',
-        attendees: '0'
+        title: '', date: '', location: '', category: 'Retreats',
+        description: '', img: 'https://picsum.photos/seed/temple/800/400', attendees: '0'
       });
     } catch (error) {
       console.error("Error adding event:", error);
@@ -121,19 +108,10 @@ const Events = () => {
       const prevState = registrations?.find(r => r.eventId === event.id)?.status;
       if (prevState === status) return;
       
-      let attendingDiff = 0;
-      let declinedDiff = 0;
-      
-      if (isAttending) {
-         attendingDiff = 1;
-         if (prevState === 'Not Attending') declinedDiff = -1;
-      } else {
-         declinedDiff = 1;
-         if (prevState === 'Attending') attendingDiff = -1;
-      }
+      let attendingDiff = isAttending ? 1 : (prevState === 'Attending' ? -1 : 0);
+      let declinedDiff = !isAttending ? 1 : (prevState === 'Not Attending' ? -1 : 0);
       
       const eventRef = doc(db, 'events', event.id);
-      
       await updateDoc(eventRef, {
         attendingCount: increment(attendingDiff),
         declinedCount: increment(declinedDiff)
@@ -143,14 +121,13 @@ const Events = () => {
         eventId: event.id,
         eventTitle: event.title,
         userId: user.uid,
-        userName: user.name || auth.currentUser?.displayName || 'Devotee',
+        userName: user.fullName || auth.currentUser?.displayName || 'Devotee',
         token: token,
         status: status,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      if (isAttending) {
-        alert(`Successfully registered! Your Attendance Token: ${token}`);
-      }
+      
+      if (isAttending) alert(`Successfully registered! Your Attendance Token: ${token}`);
     } catch (error) {
       console.error("Registration error:", error);
       alert("Failed to RSVP: " + error.message);
@@ -160,24 +137,16 @@ const Events = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        if (width > 800) {
-           height = Math.round((height * 800) / width);
-           width = 800;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        setFormData({...formData, img: dataUrl});
+        let width = img.width, height = img.height;
+        if (width > 800) { height = Math.round((height * 800) / width); width = 800; }
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        setFormData({...formData, img: canvas.toDataURL('image/jpeg', 0.7)});
       }
       img.src = event.target.result;
     };
@@ -186,324 +155,247 @@ const Events = () => {
 
   if (eventsLoading && firestoreEvents.length === 0) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-saffron" size={40} />
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin text-saffron" size={48} />
+          <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-[10px]">Gathering Events...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-8 pb-10"
-    >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold font-poppins text-saffron-dark">Event Management</h1>
-          <p className="text-gray-500 mt-1">Discover and join upcoming spiritual gatherings</p>
+    <div className="min-h-screen bg-[#fafafa] p-4 lg:p-10 relative overflow-x-hidden">
+      {/* Background Decor */}
+      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-saffron/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/3 pointer-events-none" />
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 max-w-7xl mx-auto space-y-12">
+        
+        {/* Header Section */}
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-3 px-5 py-2 bg-saffron/10 text-saffron rounded-full border border-saffron/20 shadow-sm">
+               <Megaphone size={16} />
+               <span className="text-[11px] font-black uppercase tracking-[0.2em]">Spiritual Gatherings</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.8]">
+              COMMUNITY<br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron to-gold uppercase">Events</span>
+            </h1>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex -space-x-3">
+               {[1,2,3,4].map(i => (
+                 <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden shadow-sm">
+                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="avatar" />
+                 </div>
+               ))}
+               <div className="w-10 h-10 rounded-full border-2 border-white bg-saffron text-white flex items-center justify-center text-[10px] font-black shadow-sm">+50</div>
+            </div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">Join 1000+ devotees <br/>in sacred practice</p>
+            {user?.role && (user.role === 'admin' || user.role === 'folks_head') && (
+              <Button onClick={() => setIsModalOpen(true)} className="py-4 px-8 bg-gray-900 text-white font-black rounded-2xl shadow-premium-xl group">
+                 <Plus size={18} className="mr-2 group-hover:rotate-90 transition-transform" /> CREATE EVENT
+              </Button>
+            )}
+          </div>
         </div>
-        {user?.role && (user.role === 'admin' || user.role === 'folks_head') && (
-          <Button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-saffron to-gold shadow-lg hover:shadow-xl transition-all"
-          >
-            <Plus size={20} />
-            <span>Create Event</span>
-          </Button>
-        )}
-      </div>
 
-      {/* Categories */}
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((cat) => (
-          <button 
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`px-6 py-2.5 rounded-xl whitespace-nowrap transition-all font-medium ${
-              cat === activeCategory 
-                ? 'bg-saffron text-white shadow-lg scale-105' 
-                : 'bg-white border border-saffron/10 text-gray-500 hover:border-saffron/30 hover:text-saffron'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+        {/* Categories Bar */}
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
+          {categories.map((cat) => (
+            <button 
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-8 py-3.5 rounded-2xl whitespace-nowrap transition-all font-black text-xs uppercase tracking-[0.15em] relative ${
+                cat === activeCategory 
+                  ? 'bg-gray-900 text-white shadow-premium-xl translate-y-[-2px]' 
+                  : 'bg-white/60 backdrop-blur-md border border-gray-100 text-gray-400 hover:text-saffron hover:border-saffron/30 hover:bg-white'
+              }`}
+            >
+              {cat}
+              {cat === activeCategory && (
+                <motion.div layoutId="catActive" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-saffron rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
 
-      {/* Featured Event Card (Top one) */}
-      {filteredEvents.length > 0 && (
-        <Card className="relative overflow-hidden p-0 group border-none shadow-premium transition-all duration-500 hover:shadow-premium-xl" hover={false}>
-          <div className="aspect-[16/10] sm:aspect-[21/9] md:aspect-[25/9] overflow-hidden">
-            <img 
-              src={filteredEvents[0].img} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
-              alt={filteredEvents[0].title} 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-          </div>
-          <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-10 text-white w-full">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="bg-saffron/90 backdrop-blur-sm px-3 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest shadow-lg">Featured</span>
-              <span className="bg-white/20 backdrop-blur-md px-3 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest">{filteredEvents[0].category}</span>
-            </div>
-            <h2 className="text-xl sm:text-3xl md:text-5xl font-bold mb-3 font-poppins line-clamp-2">{filteredEvents[0].title}</h2>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm md:text-base text-gray-200">
-              <span className="flex items-center gap-1.5 font-medium"><Calendar size={18} className="text-gold" /> {filteredEvents[0].date}</span>
-              <span className="hidden sm:flex items-center gap-1.5 font-medium"><MapPin size={18} className="text-gold" /> {filteredEvents[0].location}</span>
-            </div>
-            <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {(() => {
-                const reg = registrations?.find(r => r.eventId === filteredEvents[0].id);
-                if (reg?.status === 'Attending') {
-                  return (
-                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/20">
-                      <CheckCircle2 className="text-green-400" size={24} />
-                      <div>
-                        <p className="text-xs font-bold text-white uppercase tracking-wider">Attending</p>
-                        <p className="text-[10px] text-green-300 font-medium">Token: {reg.token}</p>
-                      </div>
-                      <Button onClick={() => handleRSVP(filteredEvents[0], false)} variant="secondary" className="ml-4 bg-red-500/20 text-red-100 hover:bg-red-500/40 border-none px-3 py-1 text-xs">Cancel</Button>
-                    </div>
-                  );
-                } else if (reg?.status === 'Not Attending') {
-                  return (
-                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/20">
-                      <XCircle className="text-red-400" size={24} />
-                      <p className="text-xs font-bold text-white uppercase tracking-wider">Not Attending</p>
-                      <Button onClick={() => handleRSVP(filteredEvents[0], true)} className="ml-4 bg-white text-saffron hover:bg-cream border-none px-4 py-1.5 font-bold rounded-lg text-xs">Join Anyway</Button>
-                    </div>
-                  );
-                }
-                return (
-                  <div className="flex gap-3">
-                    <Button onClick={() => handleRSVP(filteredEvents[0], true)} className="bg-white text-saffron hover:bg-cream border-none px-6 py-3 shadow-2xl font-bold rounded-xl flex items-center gap-2">
-                      <CheckCircle2 size={18} /> I will Attend
-                    </Button>
-                    <Button onClick={() => handleRSVP(filteredEvents[0], false)} variant="secondary" className="bg-black/20 text-white hover:bg-black/40 border-white/10 px-6 py-3 shadow-2xl font-bold rounded-xl flex items-center gap-2">
-                      <XCircle size={18} /> Can't Make It
-                    </Button>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Event Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
-        {filteredEvents.slice(1).map((event) => (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -8 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="p-0 overflow-hidden flex flex-col h-full border-none shadow-md hover:shadow-premium group">
-              <div className="h-52 overflow-hidden relative">
-                <img src={event.img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={event.title} />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-lg text-[10px] font-bold text-saffron uppercase tracking-widest shadow-md border border-saffron/10">
-                    {event.category}
-                  </span>
+        {/* Featured Card */}
+        {filteredEvents.length > 0 && activeCategory === 'All' && (
+          <Card className="p-0 border-none shadow-premium-xl rounded-[4rem] overflow-hidden group relative min-h-[500px] flex flex-col justify-end bg-black">
+             <div className="absolute inset-0 overflow-hidden">
+                <img src={filteredEvents[0].img} alt="hero" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+             </div>
+             
+             <div className="relative z-10 p-10 sm:p-16 space-y-8">
+                <div className="flex gap-3">
+                   <span className="px-4 py-1.5 bg-saffron text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">Featured</span>
+                   <span className="px-4 py-1.5 bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/20">{filteredEvents[0].category}</span>
                 </div>
-              </div>
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gold">
-                    <Calendar size={14} />
-                    <span>{event.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-1 rounded-md">
-                      <Users size={12} /> {event.attendingCount || 0}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-red-500 font-bold bg-red-50 px-2 py-1 rounded-md truncate max-w-[50px]">
-                      {event.declinedCount || 0}
-                    </span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-800 line-clamp-1 group-hover:text-saffron transition-colors">{event.title}</h3>
-                <p className="text-sm text-gray-500 line-clamp-2 mb-6 leading-relaxed">{event.description}</p>
                 
-                <div className="mt-auto border-t border-gray-100 pt-3">
-                  {(() => {
-                    const reg = registrations?.find(r => r.eventId === event.id);
-                    if (reg?.status === 'Attending') {
-                      return (
-                        <div className="flex items-center justify-between bg-green-50 px-3 py-2 rounded-lg border border-green-100">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="text-green-500" size={16} />
-                            <span className="text-xs font-bold text-green-700">Attending</span>
-                          </div>
-                          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded text-green-600 shadow-sm border border-green-50">{reg.token}</span>
-                        </div>
-                      );
-                    } else if (reg?.status === 'Not Attending') {
-                      return (
-                        <div className="flex items-center justify-between bg-red-50 px-3 py-2 rounded-lg border border-red-50">
-                          <div className="flex items-center gap-2">
-                            <XCircle className="text-red-400" size={16} />
-                            <span className="text-xs font-bold text-red-500">Not Attending</span>
-                          </div>
-                          <button onClick={() => handleRSVP(event, true)} className="text-[10px] font-bold text-saffron hover:underline">Change</button>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleRSVP(event, true)} className="flex-1 py-1.5 text-[11px] font-bold bg-saffron text-white rounded-lg shadow-sm flex items-center justify-center gap-1"><CheckCircle2 size={12}/> Attend</Button>
-                        <Button onClick={() => handleRSVP(event, false)} variant="secondary" className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[11px] font-bold bg-gray-50 text-gray-500 border-gray-200 rounded-lg hover:bg-gray-100"><XCircle size={12}/> Decline</Button>
+                <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter max-w-3xl leading-none italic uppercase">{filteredEvents[0].title}</h2>
+                
+                <div className="flex flex-wrap gap-10">
+                   <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><Calendar className="text-gold" size={24} /></div>
+                      <div>
+                         <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</span>
+                         <span className="text-lg font-black text-white tracking-tight">{filteredEvents[0].date}</span>
                       </div>
-                    );
-                  })()}
+                   </div>
+                   <div className="flex items-center gap-3 text-left">
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><MapPin className="text-saffron" size={24} /></div>
+                      <div className="text-left">
+                         <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Location</span>
+                         <span className="text-lg font-black text-white tracking-tight text-left">{filteredEvents[0].location}</span>
+                      </div>
+                   </div>
                 </div>
-              </div>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
 
-      {/* Add Event Modal */}
+                <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center gap-6">
+                   <Button onClick={() => handleRSVP(filteredEvents[0], true)} className="w-full sm:w-auto px-10 py-5 bg-white text-gray-900 font-black rounded-3xl hover:bg-cream transition-all uppercase tracking-[0.2em] text-[11px] shadow-2xl">
+                      I will Attend
+                   </Button>
+                   <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">{filteredEvents[0].attendees} Devotees expected</p>
+                </div>
+             </div>
+          </Card>
+        )}
+
+        {/* Grid Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+            {filteredEvents.slice(activeCategory === 'All' ? 1 : 0).map((event, idx) => (
+              <motion.div key={event.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
+                 <Card className="p-0 border-none shadow-premium-xl rounded-[3.5rem] overflow-hidden flex flex-col h-full bg-white group transition-all hover:translate-y-[-10px]">
+                    <div className="relative h-64 overflow-hidden">
+                       <img src={event.img} alt={event.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                       <div className="absolute top-6 left-6 block text-left">
+                          <span className="px-5 py-2 bg-white/90 backdrop-blur-md rounded-2xl text-[10px] font-black text-gray-900 border border-white/20 shadow-xl uppercase tracking-widest text-left">{event.category}</span>
+                       </div>
+                       <div className="absolute bottom-6 right-6">
+                          <div className="flex items-center gap-2 bg-gray-900/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
+                             <Users size={12} className="text-gold" />
+                             <span className="text-[10px] font-black text-white uppercase">{event.attendingCount || 0}</span>
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <div className="p-10 flex-1 flex flex-col space-y-6">
+                       <div className="flex items-center gap-2 text-saffron text-[11px] font-black uppercase tracking-[0.2em]">
+                          <Calendar size={14} /> {event.date}
+                       </div>
+                       <h3 className="text-2xl font-black text-gray-900 tracking-tighter leading-tight italic uppercase group-hover:text-saffron transition-colors text-left">{event.title}</h3>
+                       <p className="text-sm text-gray-400 font-bold leading-relaxed line-clamp-3 text-left">{event.description}</p>
+                       
+                       <div className="pt-8 mt-auto border-t border-gray-100 flex items-center justify-between">
+                          <div className="flex flex-col text-left">
+                             <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest text-left">Venue</span>
+                             <span className="text-xs font-bold text-gray-900 truncate max-w-[120px] text-left">{event.location}</span>
+                          </div>
+                          
+                          {(() => {
+                             const reg = registrations?.find(r => r.eventId === event.id);
+                             if (reg?.status === 'Attending') return (
+                               <div className="p-3 bg-green-50 rounded-2xl flex items-center gap-3">
+                                  <CheckCircle2 size={16} className="text-green-500" />
+                                  <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">{reg.token}</span>
+                               </div>
+                             );
+                             return (
+                               <Button onClick={() => handleRSVP(event, true)} className="py-3 px-6 bg-saffron text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:shadow-saffron/20 group">
+                                  JOIN <ChevronRight size={14} className="ml-1 group-hover:translate-x-1" />
+                               </Button>
+                             );
+                          })()}
+                       </div>
+                    </div>
+                 </Card>
+              </motion.div>
+            ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredEvents.length === 0 && (
+          <div className="text-center py-32 bg-white rounded-[4rem] shadow-premium-xl border border-gray-100">
+             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
+                <Filter size={40} className="text-gray-200" />
+             </div>
+             <h3 className="text-3xl font-black text-gray-900 tracking-tight italic uppercase">No Sacred Gatherings Found</h3>
+             <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Try switching categories, or check back later!</p>
+          </div>
+        )}
+
+        <div className="h-20" />
+      </motion.div>
+
+      {/* Modern Creation Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-premium p-8 overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
-              >
-                <X size={20} />
-              </button>
-
-              <h2 className="text-2xl font-bold text-saffron-dark mb-6">Create New Event</h2>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Event Title</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-saffron outline-none transition-all font-medium"
-                      placeholder="e.g. Maha Kirtan Night"
-                    />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-xl" />
+            <motion.div initial={{ scale: 0.9, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 50 }} className="relative w-full max-w-2xl bg-white rounded-[4rem] shadow-premium-xl p-10 sm:p-14 overflow-y-auto max-h-[90vh] border border-saffron/10 scrollbar-hide">
+               <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-all"><X size={24}/></button>
+               
+               <div className="text-center mb-12">
+                  <div className="w-16 h-16 bg-gradient-to-br from-saffron to-gold rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                     <Sparkles size={32} className="text-white" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Category</label>
-                    <select 
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-saffron outline-none transition-all appearance-none font-medium"
-                    >
-                      {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                </div>
+                  <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic leading-none">Assemble the Sips</h2>
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Publish a Divine Gathering</p>
+               </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Date & Time</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input 
-                        required
-                        type="datetime-local" 
-                        value={formData.date}
-                        onChange={(e) => setFormData({...formData, date: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-saffron outline-none transition-all font-medium"
-                      />
+               <form onSubmit={handleSubmit} className="space-y-10">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Event Title</label>
+                       <input required type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-8 py-5 bg-gray-50 rounded-3xl border border-gray-100 focus:bg-white focus:border-saffron outline-none font-black text-gray-900 tracking-tight transition-all placeholder:text-gray-200" placeholder="e.g. Mahotsav 2026" />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Location</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.location}
-                        onChange={(e) => setFormData({...formData, location: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-saffron outline-none transition-all font-medium"
-                        placeholder="e.g. Temple Hall"
-                      />
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+                       <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-8 py-5 bg-gray-50 rounded-3xl border border-gray-100 focus:bg-white focus:border-saffron outline-none font-black text-gray-900 transition-all appearance-none cursor-pointer">
+                          {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+                       </select>
                     </div>
-                  </div>
-                </div>
+                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">Description</label>
-                  <textarea 
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-saffron outline-none transition-all font-medium resize-none"
-                    placeholder="Short description of the event..."
-                  />
-                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date & Time</label>
+                       <input required type="datetime-local" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-8 py-5 bg-gray-50 rounded-3xl border border-gray-100 focus:bg-white focus:border-saffron outline-none font-black text-gray-900 transition-all" />
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Location</label>
+                       <input required type="text" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-8 py-5 bg-gray-50 rounded-3xl border border-gray-100 focus:bg-white focus:border-saffron outline-none font-black text-gray-900 transition-all placeholder:text-gray-200" placeholder="e.g. Govinda Hall" />
+                    </div>
+                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">Event Banner Image</label>
-                  <label className="flex items-center gap-3 cursor-pointer w-full px-4 py-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-100 hover:border-saffron/30 transition-all font-medium overflow-hidden">
-                    <ImageIcon className={formData.img.startsWith('data:image') ? "text-saffron" : "text-gray-400"} size={20} />
-                    <span className="text-sm font-medium text-gray-500 truncate">
-                      {formData.img.startsWith('data:image') ? "Image captured and compressed!" : "Click to select image file..."}
-                    </span>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.img && formData.img.startsWith('data:image') && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-3 h-32 w-full rounded-xl overflow-hidden shadow-sm relative group">
-                       <img src={formData.img} alt="Preview" className="w-full h-full object-cover" />
-                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                         <span className="text-white font-bold text-xs uppercase tracking-widest px-3 py-1 bg-black/50 rounded flex items-center gap-1"><CheckCircle2 size={14}/> Ready</span>
-                       </div>
-                    </motion.div>
-                  )}
-                </div>
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Description</label>
+                    <textarea rows={3} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-8 py-5 bg-gray-50 rounded-3xl border border-gray-100 focus:bg-white focus:border-saffron outline-none font-black text-gray-900 transition-all resize-none placeholder:text-gray-200" placeholder="Brief details about the spiritual experience..." />
+                 </div>
 
-                <div className="flex gap-4 pt-4">
-                  <Button 
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-4 font-bold border-gray-200"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit"
-                    className="flex-1 py-4 font-bold bg-gradient-to-r from-saffron to-gold shadow-lg"
-                  >
-                    Publish Event
-                  </Button>
-                </div>
-              </form>
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Visual Banner</label>
+                    <label className="flex items-center gap-4 cursor-pointer w-full p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2.5rem] hover:bg-gray-100 hover:border-saffron transition-all group overflow-hidden">
+                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform"><ImageIcon className="text-gray-400" size={24} /></div>
+                       <span className="text-xs font-black text-gray-400 uppercase tracking-widest truncate">{formData.img.startsWith('data') ? 'IMAGE SECURED' : 'CHOOSE SACRED IMAGE'}</span>
+                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    </label>
+                 </div>
+
+                 <Button type="submit" disabled={submitting} className="w-full py-6 bg-gray-900 text-white font-black rounded-[2.5rem] shadow-premium-xl hover:bg-black group text-xs uppercase tracking-[0.3em]">
+                    {submitting ? <Loader2 className="animate-spin mx-auto" /> : <div className="flex items-center justify-center gap-3">PUBLISH EXPERIENCE <Megaphone size={18} /></div>}
+                 </Button>
+               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
 

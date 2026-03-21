@@ -108,9 +108,14 @@ const Login = () => {
       }
     }
 
+    if (isSignUp && !name) {
+      setError('Please provide your Full Name to complete registration.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await completeProfile(selectedRole);
+      await completeProfile(selectedRole, name);
     } catch (err) {
       setError('Failed to save role. Please try again.');
     } finally { setLoading(false); }
@@ -139,14 +144,15 @@ const Login = () => {
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-20 h-20 bg-gradient-to-br from-saffron to-gold rounded-3xl flex items-center justify-center text-white shadow-2xl mx-auto mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-500"
+              className="w-24 h-24 mx-auto mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-500"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 drop-shadow-lg text-white">
-                <path d="M7 3v9c0 2.76 2.24 5 5 5s5-2.24 5-5V3h-2v9c0 1.66-1.34 3-3 3s-3-1.34-3-3V3H7z" />
-                <path d="M12 21c-1.1 0-2-.9-2-2s2-3 2-3 2 1.9 2 3-.9 2-2 2z" />
-              </svg>
+              <img 
+                src="/logo.png" 
+                alt="Folkvizag Logo" 
+                className="w-full h-full object-contain filter sepia saturate-[8] hue-rotate-[-30deg] drop-shadow-[0_0_15px_rgba(255,153,51,0.4)]" 
+              />
             </motion.div>
-            <h1 className="text-3xl font-extrabold text-saffron-dark font-poppins mb-2 tracking-tight">Folkvizag</h1>
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent font-poppins mb-2 tracking-tight">Folkvizag</h1>
             <p className="text-gray-400 font-medium text-xs sm:text-sm">Digital Devotion & Management</p>
           </div>
 
@@ -210,12 +216,10 @@ const Login = () => {
                     </button>
                   </div>
                   
-                  {authMethod === 'email' && (
-                    <div className="flex gap-4 border-b border-gray-100 pb-2">
-                      <button onClick={() => setIsSignUp(false)} className={`flex-1 text-sm font-bold transition-all ${!isSignUp ? 'text-saffron border-b-2 border-saffron pb-2' : 'text-gray-400 pb-2 hover:text-gray-600'}`}>Log In</button>
-                      <button onClick={() => setIsSignUp(true)} className={`flex-1 text-sm font-bold transition-all ${isSignUp ? 'text-saffron border-b-2 border-saffron pb-2' : 'text-gray-400 pb-2 hover:text-gray-600'}`}>Sign Up</button>
-                    </div>
-                  )}
+                  <div className="flex gap-4 border-b border-gray-100 pb-2 mt-4">
+                    <button onClick={() => setIsSignUp(false)} className={`flex-1 text-sm font-bold transition-all ${!isSignUp ? 'text-saffron border-b-2 border-saffron pb-2' : 'text-gray-400 pb-2 hover:text-gray-600'}`}>Log In</button>
+                    <button onClick={() => setIsSignUp(true)} className={`flex-1 text-sm font-bold transition-all ${isSignUp ? 'text-saffron border-b-2 border-saffron pb-2' : 'text-gray-400 pb-2 hover:text-gray-600'}`}>Sign Up</button>
+                  </div>
                 </div>
               )}
 
@@ -275,13 +279,23 @@ const Login = () => {
                   <motion.form key="phone-form" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     {!otpSent ? (
                       <>
+                        <AnimatePresence>
+                          {isSignUp && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+                              <div className={inputWrapperClass}>
+                                <User className={iconClass} size={20} />
+                                <input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                         <div className={inputWrapperClass}>
                           <Phone className={iconClass} size={20} />
                           <input type="tel" placeholder="+91 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
                         </div>
                         <div id="recaptcha-container" className="flex justify-center my-2"></div>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} onClick={handlePhoneAuth} className="w-full py-4 bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2">
-                          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span>Send OTP</span>}
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} onClick={handlePhoneAuth} className="w-full py-4 bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2 mt-4">
+                          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span>{isSignUp ? 'Sign Up with OTP' : 'Send OTP'}</span>}
                         </motion.button>
                       </>
                     ) : (

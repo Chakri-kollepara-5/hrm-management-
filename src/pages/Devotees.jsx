@@ -12,7 +12,9 @@ import {
   Shield,
   Filter,
   Download,
-  X
+  X,
+  Flame,
+  Star
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { 
@@ -198,21 +200,35 @@ const Devotees = () => {
                         {devotee.role || 'Devotee'}
                       </span>
                       <h3 className="font-bold text-lg text-gray-900 truncate">{devotee.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                        <Phone size={14} className="text-gold" />
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-saffron bg-saffron/5 px-2 py-0.5 rounded-md border border-saffron/10">
+                          <Flame size={12} fill="currentColor" />
+                          <span>{devotee.streak || 0}d</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                          <Trophy size={12} />
+                          <span>{devotee.longestStreak || 0}d BEST</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-gold-dark bg-gold/5 px-2 py-0.5 rounded-md border border-gold/10">
+                          <Star size={12} fill="currentColor" />
+                          <span>{devotee.score || 0} pts</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                        <Phone size={14} className="text-gray-400" />
                         <span>{devotee.phone || 'No phone'}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-500 font-medium">
-                      <Shield size={14} className="text-saffron" />
+                  <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                      <Shield size={14} />
                       <span>Level {devotee.level || '1'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-400">
                       <MapPin size={14} />
-                      <span className="truncate max-w-[120px]">{devotee.address || 'Unknown'}</span>
+                      <span className="truncate max-w-[120px]">{devotee.address || 'Vizag'}</span>
                     </div>
                   </div>
                 </Card>

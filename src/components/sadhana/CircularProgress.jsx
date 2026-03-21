@@ -7,27 +7,25 @@ const CircularProgress = ({ current, total, label }) => {
   const circumference = 2 * Math.PI * radius
 
   return (
-    <div className="relative w-48 h-48 flex items-center justify-center">
-      <svg className="w-full h-full -rotate-90">
+    <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
         <circle 
-          cx="96" cy="96" r={radius} 
+          cx="100" cy="100" r={radius} 
           stroke="currentColor" strokeWidth="12" fill="transparent" 
           className="text-saffron/10" 
         />
         <motion.circle 
-          cx="96" cy="96" r={radius} 
+          cx="100" cy="100" r={radius} 
           stroke="currentColor" strokeWidth="12" fill="transparent" 
+          strokeDashoffset={circumference}
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: circumference * (1 - percentage) }}
           transition={{ duration: 1.5, ease: "easeOut" }}
+          strokeLinecap="round"
           className="text-saffron" 
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-bold font-poppins">{current}/{total}</span>
-        <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{label}</span>
-      </div>
     </div>
   )
 }

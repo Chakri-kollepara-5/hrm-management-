@@ -8,7 +8,7 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
 
   const allItems = [
     { id: 'admin', icon: <LayoutDashboard size={20} />, label: 'Admin', roles: ['admin', 'folks_head'] },
-    { id: 'sadhana', icon: <TrendingUp size={20} />, label: 'Sadhana', roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'dashboard', icon: <TrendingUp size={20} />, label: 'Sadhana', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'events', icon: <Calendar size={20} />, label: 'Events', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home size={20} />, label: 'Stay', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'attendance', icon: <CheckSquare size={20} />, label: 'Check-in', roles: ['admin', 'folks_head'] },
