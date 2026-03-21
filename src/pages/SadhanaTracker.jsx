@@ -432,7 +432,7 @@ const SadhanaTracker = () => {
              <div className="flex flex-col items-center relative z-10">
                 <div className="relative mb-14 flex items-center justify-center">
                    <CircularProgress current={currentRounds} total={currentTarget || 16} />
-                   <div className="absolute inset-0 flex flex-col items-center justify-start pt-12 pointer-events-none">
+                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <motion.span 
                         key={currentRounds}
                         initial={{ scale: 0.8, opacity: 0 }}
@@ -443,6 +443,7 @@ const SadhanaTracker = () => {
                       </motion.span>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1 bg-white/50 px-3 py-1 rounded-full">of {currentTarget || '--'} Rounds</span>
                    </div>
+
                 </div>
 
                 <div className="w-full max-w-sm space-y-12">
