@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { auth, db } from '../lib/firebase'
 import { 
-  Calendar, MapPin, Tag, Users, ArrowRight, Loader2, Plus, X, Clock, Image as ImageIcon, CheckCircle2, XCircle, Filter, Sparkles, Megaphone
+  Calendar, MapPin, Tag, Users, ArrowRight, Loader2, Plus, X, Clock, Image as ImageIcon, CheckCircle2, XCircle, Filter, Sparkles, Megaphone, ChevronRight
 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
