@@ -1,0 +1,182 @@
+import { useState, useEffect, createContext, useContext } from 'react';
+import { auth, db } from '../lib/firebase';
+import { 
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  sendPasswordResetEmail,
+  signOut
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    const cached = localStorage.getItem('fast_load_cache');
+    return cached ? JSON.parse(cached) : null;
+  });
+  const [loading, setLoading] = useState(() => !localStorage.getItem('fast_load_cache'));
+  const [profileLoaded, setProfileLoaded] = useState(() => !!localStorage.getItem('fast_load_cache'));
+
+  const loginGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const loginEmail = async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const registerEmail = async (email, password, name) => {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const setupRecaptcha = (containerId) => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+        size: 'invisible'
+      });
+    }
+  };
+
+  const sendOTP = async (phoneNumber) => {
+    try {
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+      window.confirmationResult = confirmationResult;
+      return confirmationResult;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (otp) => {
+    try {
+      await window.confirmationResult.confirm(otp);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const completeProfile = async (role) => {
+    if (!auth.currentUser) return;
+    
+    // Supreme Admin Escalation Check
+    const isRootAdmin = auth.currentUser.uid === 'wRbvUaFiBOYeXEEtF8OuXnzGWXs2';
+    const assignedRole = isRootAdmin ? 'admin' : role;
+    
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    try {
+      const profileData = {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        name: auth.currentUser.displayName || 'Devotee',
+        photo: auth.currentUser.photoURL,
+        role: assignedRole, 
+        createdAt: serverTimestamp()
+      };
+      await setDoc(userRef, profileData);
+      const finalUser = { ...auth.currentUser, ...profileData };
+      setUser(finalUser);
+      localStorage.setItem('fast_load_cache', JSON.stringify(finalUser));
+    } catch (error) {
+      console.error("Error completing profile:", error);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('fast_load_cache');
+    } catch (error) {
+      console.error("Logout error", error);
+    }
+  };
+
+
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      setLoading(true);
+      if (authUser) {
+        try {
+          // Fetch additional user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+          if (userDoc.exists()) {
+            let liveRole = userDoc.data().role;
+            
+            // Hardcode root admin assignment and patch database silently if mismatched
+            if (authUser.uid === 'wRbvUaFiBOYeXEEtF8OuXnzGWXs2' && liveRole !== 'admin') {
+               await setDoc(doc(db, 'users', authUser.uid), { role: 'admin' }, { merge: true });
+               liveRole = 'admin';
+            }
+            
+            const finalUser = { ...authUser, ...userDoc.data(), role: liveRole, requiresRole: false };
+            setUser(finalUser);
+            localStorage.setItem('fast_load_cache', JSON.stringify(finalUser));
+          } else {
+            // New user or missing profile, flag for role selection
+            setUser({
+              ...authUser,
+              requiresRole: true
+            });
+          }
+        } catch (error) {
+          // If error is permission-denied, it might just be a new user without a doc yet
+          if (error.code === 'permission-denied') {
+            setUser({ ...authUser, requiresRole: true });
+          } else {
+            console.error("Auth Firestore Error:", error);
+          }
+        } finally {
+          setProfileLoaded(true);
+        }
+      } else {
+        setUser(null);
+        setProfileLoaded(true);
+        localStorage.removeItem('fast_load_cache');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading: loading || (!user && !profileLoaded), loginGoogle, loginEmail, registerEmail, resetPassword, setupRecaptcha, sendOTP, verifyOTP, logout, completeProfile }}>
+      {(loading || (!user && !profileLoaded)) ? (
+        <div className="min-h-screen bg-cream flex items-center justify-center">
+          <div className="w-16 h-16 border-4 border-saffron border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
