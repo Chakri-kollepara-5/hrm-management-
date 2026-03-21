@@ -28,19 +28,19 @@ const Navbar = ({ setActiveTab }) => {
   }, [])
 
   return (
-    <header className="h-20 bg-white/50 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between border-b border-saffron/10 transition-all duration-500">
+    <header className="h-16 sm:h-20 bg-white/50 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between border-b border-saffron/10 transition-all duration-500">
       <div className="flex items-center gap-4">
         <div className="flex items-center drop-shadow-sm hover:drop-shadow-md transition-all duration-300">
           <img 
             src="/logo.png" 
             alt="Folkvizag Logo" 
-            className="h-12 w-auto object-contain hover:scale-[1.02] transition-transform cursor-pointer drop-shadow-md" 
+            className="h-8 sm:h-12 w-auto object-contain hover:scale-[1.02] transition-transform cursor-pointer drop-shadow-md" 
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 sm:gap-6">
+      <div className="flex items-center gap-2 sm:gap-6">
+        <div className="flex items-center gap-1 sm:gap-6">
           
           {/* Realtime Notification Bell */}
           <div className="relative" ref={notifRef}>
@@ -111,10 +111,10 @@ const Navbar = ({ setActiveTab }) => {
                 )}
               </div>
               {user?.role === 'folks_head' && (
-                <p className="text-[10px] text-gold-dark font-bold uppercase tracking-widest">Folks Head</p>
+                <p className="text-[10px] text-gold-dark font-bold uppercase tracking-widest hidden xs:block">Folks Head</p>
               )}
               {user?.role === 'devotee' && (
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Devotee</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden xs:block">Devotee</p>
               )}
               {!user?.role && (
                 <p className="text-[10px] text-red-400 font-bold uppercase tracking-widest">Unassigned</p>

@@ -25,10 +25,10 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
       {/* Main Content Area */}
       <main className={`transition-all duration-300 min-h-screen flex flex-col ${
         isSidebarOpen ? 'md:pl-[260px]' : 'md:pl-[80px]'
-      } pb-24 md:pb-0`}>
+      } pb-32 md:pb-0`}>
         <Navbar setActiveTab={setActiveTab} />
         
-        <div className="flex-1 p-4 md:p-10 max-w-[1600px] mx-auto w-full relative z-10 transition-all">
+        <div className="flex-1 p-4 sm:p-6 md:p-10 max-w-[1600px] mx-auto w-full relative z-10 transition-all">
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children}
           </div>

@@ -387,7 +387,7 @@ const SadhanaTracker = () => {
                <TrendingUp size={16} />
                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Sadhana Tracker v2.0</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.8]">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.8]">
               SADHANA <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron to-gold">TRACKER</span>
             </h1>
@@ -405,10 +405,10 @@ const SadhanaTracker = () => {
               <motion.div
                 key={i}
                 whileHover={{ y: -8, scale: 1.02 }}
-                className={`flex items-center gap-6 ${stat.bg} px-8 py-5 rounded-[2.5rem] border border-white shadow-premium group transition-all`}
+                className={`flex items-center gap-4 sm:gap-6 ${stat.bg} px-4 py-4 sm:px-8 sm:py-5 rounded-[2rem] sm:rounded-[2.5rem] border border-white shadow-premium group transition-all`}
               >
-                <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-lg group-hover:rotate-12 transition-all">
-                   <stat.icon className={stat.color} fill={stat.color === 'text-saffron' ? '#FF9933' : 'transparent'} size={28} />
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-lg group-hover:rotate-12 transition-all">
+                   <stat.icon className={stat.color} fill={stat.color === 'text-saffron' ? '#FF9933' : 'transparent'} size={20} />
                 </div>
                 <div>
                   <span className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{stat.label}</span>
@@ -424,7 +424,7 @@ const SadhanaTracker = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Main Interface */}
-          <Card className="lg:col-span-12 xl:col-span-4 p-10 sm:p-14 bg-white border-none shadow-premium-xl rounded-[4rem] relative overflow-hidden flex flex-col justify-center min-h-[650px] group">
+          <Card className="lg:col-span-12 xl:col-span-4 p-6 sm:p-14 bg-white border-none shadow-premium-xl rounded-[3rem] sm:rounded-[4rem] relative overflow-hidden flex flex-col justify-center min-h-[400px] sm:min-h-[650px] group">
              <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-all duration-700 group-hover:rotate-12 group-hover:scale-125">
                 <Target size={200} />
              </div>
@@ -456,14 +456,14 @@ const SadhanaTracker = () => {
                         
                         <div className="bg-white p-4 rounded-[3.5rem] border border-gray-100 shadow-2xl relative group/input overflow-hidden">
                            <div className="flex items-center justify-between relative z-10">
-                             <button onClick={() => setInputRounds(prev => Math.max(0, (parseInt(prev) || 0) - 1).toString())} className="w-20 h-20 rounded-[2.5rem] bg-gray-50 flex items-center justify-center text-gray-400 font-black text-3xl hover:bg-saffron/10 hover:text-saffron transition-all active:scale-90">-</button>
+                             <button onClick={() => setInputRounds(prev => Math.max(0, (parseInt(prev) || 0) - 1).toString())} className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[2.5rem] bg-gray-50 flex items-center justify-center text-gray-400 font-black text-2xl sm:text-3xl hover:bg-saffron/10 hover:text-saffron transition-all active:scale-90">-</button>
                               <div className="text-center">
                                  <AnimatePresence mode="wait">
-                                    <motion.span key={inputRounds} initial={{y:20, opacity:0}} animate={{y:0, opacity:1}} exit={{y:-20, opacity:0}} className="text-7xl font-black text-gray-900 block tabular-nums leading-none mb-1">{inputRounds || 0}</motion.span>
+                                    <motion.span key={inputRounds} initial={{y:20, opacity:0}} animate={{y:0, opacity:1}} exit={{y:-20, opacity:0}} className="text-5xl sm:text-7xl font-black text-gray-900 block tabular-nums leading-none mb-1">{inputRounds || 0}</motion.span>
                                  </AnimatePresence>
                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] block">Rounds Logged</span>
                               </div>
-                             <button onClick={() => setInputRounds(prev => Math.min(200, (parseInt(prev) || 0) + 1).toString())} className="w-20 h-20 rounded-[2.5rem] bg-gray-50 flex items-center justify-center text-gray-400 font-black text-3xl hover:bg-saffron/10 hover:text-saffron transition-all active:scale-90">+</button>
+                             <button onClick={() => setInputRounds(prev => Math.min(200, (parseInt(prev) || 0) + 1).toString())} className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[2.5rem] bg-gray-50 flex items-center justify-center text-gray-400 font-black text-2xl sm:text-3xl hover:bg-saffron/10 hover:text-saffron transition-all active:scale-90">+</button>
                            </div>
                            <div className="absolute inset-0 bg-saffron/5 translate-y-full group-hover/input:translate-y-0 transition-transform duration-700 pointer-events-none" />
                         </div>

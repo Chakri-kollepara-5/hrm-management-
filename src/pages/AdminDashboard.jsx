@@ -138,7 +138,7 @@ const AdminDashboard = ({ setActiveTab }) => {
               whileHover={{ y: -5, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setActiveTab(action.tab)}
-              className={`flex items-center gap-3 p-4 rounded-2xl font-bold text-sm shadow-lg transition-all ${action.color}`}
+              className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl font-bold text-xs sm:text-sm shadow-lg transition-all ${action.color}`}
             >
               <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                 {action.icon}
@@ -328,7 +328,7 @@ const AdminDashboard = ({ setActiveTab }) => {
                         )}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-800 text-sm truncate max-w-[120px]">{d.name}</p>
+                        <p className="font-bold text-gray-800 text-sm truncate max-w-[100px] xs:max-w-[150px] lg:max-w-none">{d.name}</p>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
                            <Flame size={10} className="text-saffron" />
                            <span>{d.streak || 0}d Streak</span>

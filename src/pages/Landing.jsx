@@ -105,7 +105,7 @@ const Landing = ({ onLoginClick }) => {
                <span className="text-xs font-black text-gray-800 uppercase tracking-[0.2em]">The Ultimate Spiritual App</span>
             </div>
             
-            <h1 className="text-6xl md:text-8xl lg:text-[100px] font-black text-gray-900 tracking-tighter leading-[0.85] drop-shadow-sm">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[100px] font-black text-gray-900 tracking-tighter leading-[0.9] sm:leading-[0.85] drop-shadow-sm">
                YOUR <br/>
                <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-500 via-celestial to-blue-400">DIVINE</span> <br/>
                <span className="relative">
@@ -119,7 +119,7 @@ const Landing = ({ onLoginClick }) => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-5 pt-4">
-              <Button onClick={onLoginClick} className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-saffron to-gold text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-premium-xl group hover:shadow-saffron/30 hover:-translate-y-1 transition-all">
+              <Button onClick={onLoginClick} className="w-full sm:w-auto px-6 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-saffron to-gold text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-premium-xl group hover:shadow-saffron/30 hover:-translate-y-1 transition-all">
                  <div className="flex items-center gap-3 justify-center">
                     Enter Application <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                  </div>
@@ -135,7 +135,7 @@ const Landing = ({ onLoginClick }) => {
             </div>
           </motion.div>
 
-          <div className="relative order-1 lg:order-2 h-[400px] sm:h-[600px] lg:h-[800px] flex items-center justify-center w-full">
+          <div className="relative order-1 lg:order-2 h-[350px] sm:h-[600px] lg:h-[800px] flex items-center justify-center w-full">
              {/* The Cute Krishna Toy Asset */}
              <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <FloatingElement yOffset={30} duration={6}>
@@ -147,7 +147,7 @@ const Landing = ({ onLoginClick }) => {
                    >
                      {/* Glossy Backdrop for that App Icon feel */}
                      <div className="absolute inset-4 bg-gradient-to-tr from-white/40 to-white/10 blur-3xl rounded-full -z-10"></div>
-                     <img src="/krishna_toy.png" alt="Cute Krishna 3D" className="w-[300px] sm:w-[450px] md:w-[600px] h-auto object-contain drop-shadow-[0_35px_35px_rgba(255,153,51,0.25)]" />
+                     <img src="/krishna_toy.png" alt="Cute Krishna 3D" className="w-[240px] sm:w-[450px] md:w-[600px] h-auto object-contain drop-shadow-[0_20px_40px_rgba(255,153,51,0.25)]" />
                    </motion.div>
                 </FloatingElement>
              </div>
@@ -207,7 +207,7 @@ const Landing = ({ onLoginClick }) => {
       <section id="sadhana" className="py-32 px-6 lg:px-12 max-w-[1400px] mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
            <span className="text-saffron font-black uppercase tracking-[0.3em] text-xs">Explore Features</span>
-           <h2 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter">Everything You Need.</h2>
+            <h2 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter">Everything You Need.</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -246,7 +246,7 @@ const Landing = ({ onLoginClick }) => {
                <div className="w-16 h-16 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-4">
                   <Star className="text-blue-500" fill="currentColor" size={32} />
                </div>
-               <h2 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.9]">
+               <h2 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.9]">
                   Vibrant <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-celestial">Festivals.</span>
                </h2>
                <p className="text-xl text-gray-500 font-medium leading-relaxed max-w-md">
@@ -341,7 +341,7 @@ const Landing = ({ onLoginClick }) => {
            <div className="w-20 h-20 bg-saffron rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl rotate-3">
               <Sparkles size={36} fill="currentColor" />
            </div>
-           <h2 className="text-5xl md:text-8xl font-black text-gray-900 tracking-tighter leading-[0.9]">
+           <h2 className="text-4xl md:text-8xl font-black text-gray-900 tracking-tighter leading-[0.9]">
               Begin Your <br/> <span className="italic font-serif font-medium text-saffron">Journey.</span>
            </h2>
            <p className="text-xl text-gray-500 font-medium max-w-xl mx-auto">
