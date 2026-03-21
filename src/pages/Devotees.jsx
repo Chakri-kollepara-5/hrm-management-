@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'
+import { getSafeProfileImage } from '../lib/imageUtils';
 import { 
   Search, 
   Plus, 
@@ -14,7 +15,8 @@ import {
   Download,
   X,
   Flame,
-  Star
+  Star,
+  Trophy
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { 
@@ -188,7 +190,7 @@ const Devotees = () => {
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-saffron/10 to-gold/10 p-1 shrink-0 shadow-inner">
                       <img 
-                        src={devotee.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${devotee.id}`} 
+                        src={getSafeProfileImage(devotee.photo, devotee.name)} 
                         className="w-full h-full rounded-2xl object-cover" 
                         alt="" 
                       />

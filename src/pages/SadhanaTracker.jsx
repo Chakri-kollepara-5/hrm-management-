@@ -163,7 +163,12 @@ const SadhanaTracker = () => {
 
         const uData = uDoc.data() || {};
         const oldLogData = lDoc.data();
-        const target = oldLogData.target;
+        let target = oldLogData.target || 16;
+        
+        // Admins must complete 16 rounds for streak
+        if (uData.role === 'admin' || uData.role === 'folks_head') {
+          target = 16;
+        }
 
         let currentStreak = uData.streak || 0;
         const yesterdayDate = new Date();
@@ -209,7 +214,7 @@ const SadhanaTracker = () => {
         transaction.update(userRef, {
           streak: currentStreak,
           longestStreak: newLongestStreak,
-          score: (uData.score || 0) + scoreDiff,
+          score: Math.max(0, (uData.score || 0) + scoreDiff),
           lastSadhanaDate: today,
           updatedAt: serverTimestamp()
         });
@@ -270,7 +275,7 @@ const SadhanaTracker = () => {
             initial={{ opacity: 0, y: 50, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.8 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 bg-gray-900 text-white px-6 py-3.5 rounded-2xl shadow-premium-xl border border-white/10"
+            className="fixed bottom-24 lg:bottom-10 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 bg-gray-900 text-white px-6 py-3.5 rounded-2xl shadow-premium-xl border border-white/10"
           >
             <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                <CheckCircle2 size={14} className="text-white" />
@@ -395,7 +400,7 @@ const SadhanaTracker = () => {
             {[
               { label: 'Current Streak', val: sadhanaData.profile.streak, unit: 'Days', icon: Flame, color: 'text-saffron', bg: 'bg-saffron/5' },
               { label: 'Longest Record', val: sadhanaData.profile.longestStreak, unit: 'Days', icon: Trophy, color: 'text-gold-dark', bg: 'bg-gold/5' },
-              { label: 'Divine Score', val: sadhanaData.profile.score, unit: 'Pts', icon: Star, color: 'text-blue-600', bg: 'bg-blue-50' }
+              { label: 'Divine Score', val: Math.max(0, sadhanaData.profile.score || 0), unit: 'Pts', icon: Star, color: 'text-blue-600', bg: 'bg-blue-50' }
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -427,16 +432,16 @@ const SadhanaTracker = () => {
              <div className="flex flex-col items-center relative z-10">
                 <div className="relative mb-14 flex items-center justify-center">
                    <CircularProgress current={currentRounds} total={currentTarget || 16} />
-                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                   <div className="absolute inset-0 flex flex-col items-center justify-start pt-12 pointer-events-none">
                       <motion.span 
                         key={currentRounds}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="text-7xl font-black text-gray-900 tracking-tighter leading-none"
+                        className="text-5xl font-black text-gray-900 tracking-tighter leading-none shadow-sm pb-1"
                       >
                         {currentRounds}
                       </motion.span>
-                      <span className="text-[12px] font-black text-gray-400 uppercase tracking-[0.3em] mt-4">of {currentTarget || '--'} Rounds</span>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1 bg-white/50 px-3 py-1 rounded-full">of {currentTarget || '--'} Rounds</span>
                    </div>
                 </div>
 

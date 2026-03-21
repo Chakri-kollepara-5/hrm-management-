@@ -9,7 +9,8 @@ import {
   CheckSquare, 
   X, 
   Menu,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react'
 import { cn } from '../ui/Card'
 import { useAuth } from '../../hooks/useAuth'
@@ -43,7 +44,7 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
   const { user } = useAuth();
   
   const allItems = [
-    { id: 'admin', icon: <LayoutDashboard />, label: "Admin Dashboard", roles: ['admin', 'folks_head'] },
+    { id: 'admin', icon: <Shield />, label: "Command Center", roles: ['admin', 'folks_head'] },
     { id: 'devotees', icon: <User />, label: "Devotees", roles: ['admin', 'folks_head'] },
     { id: 'events', icon: <Calendar />, label: "Event Management", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'dashboard', icon: <TrendingUp />, label: "Sadhana Tracker", roles: ['admin', 'folks_head', 'devotee'] },

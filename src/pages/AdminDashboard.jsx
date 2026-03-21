@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Flame, Calendar, ChevronRight, Loader2, Sparkles, Quote, ShieldCheck, Plus, Bell, Users } from 'lucide-react'
+import { Flame, Calendar, ChevronRight, Loader2, Sparkles, Quote, ShieldCheck, Plus, Bell, Users, Home, CheckSquare, Trophy } from 'lucide-react'
 import Button from '../components/ui/Button'
 import StatCard from '../components/dashboard/StatCard'
 import CircularProgress from '../components/sadhana/CircularProgress'
@@ -10,6 +10,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFirestore } from '../hooks/useFirestore'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, limit } from 'firebase/firestore'
+import { getSafeProfileImage } from '../lib/imageUtils'
 
 const AdminDashboard = ({ setActiveTab }) => {
   const { user } = useAuth();
@@ -27,30 +28,43 @@ const AdminDashboard = ({ setActiveTab }) => {
   const { data: allRequests, loading: requestsLoading } = useFirestore('accommodation_requests', requestsQuery);
   const { data: sadhanaLogs, loading: sadhanaLoading } = useFirestore('sadhana_logs', sadhanaQuery);
 
+  const currentUserData = allUsers.find(u => u.id === user?.uid) || {};
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  let realTimeStreak = currentUserData.streak || 0;
+  if (currentUserData.lastSadhanaDate && currentUserData.lastSadhanaDate !== today && currentUserData.lastSadhanaDate !== yesterdayStr) {
+    realTimeStreak = 0;
+  }
+
   const stats = [
     { 
       label: 'Sadhana Score', 
-      value: `${sadhanaLogs[0]?.score || 0}%`, 
-      sub: sadhanaLogs[0]?.score >= 80 ? 'Excellent!' : 'Focus needed', 
+      value: `${Math.min(sadhanaLogs[0]?.score || 0, 100)}%`, 
+      sub: sadhanaLogs[0]?.score >= 100 ? 'Perfect!' : (sadhanaLogs[0]?.score >= 80 ? 'Excellent!' : 'Focus needed'), 
       color: 'saffron' 
     },
     { 
       label: 'Total Devotees', 
       value: allUsers.length.toLocaleString(), 
       sub: `+${allUsers.filter(u => u.createdAt?.toMillis() > Date.now() - 604800000).length} this week`, 
-      color: 'gold' 
+      color: 'gold',
+      onClick: () => setActiveTab('devotees')
     },
     { 
       label: 'Upcoming Events', 
       value: allEvents.length.toString(), 
       sub: allEvents[0] ? `Next: ${allEvents[0].title}` : 'No events scheduled', 
-      color: 'celestial' 
+      color: 'celestial',
+      onClick: () => setActiveTab('events')
     },
     { 
       label: 'Pending Requests', 
       value: allRequests.length.toString(), 
-      sub: 'Status: Action Required', 
-      color: 'saffron' 
+      sub: 'Action Required', 
+      color: 'saffron',
+      onClick: () => setActiveTab('accommodation')
     },
   ];
 
@@ -93,7 +107,7 @@ const AdminDashboard = ({ setActiveTab }) => {
               </div>
               <div>
                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">STREAK</p>
-                <p className="text-lg font-bold leading-none text-saffron-dark">12 Days</p>
+                <p className="text-lg font-bold leading-none text-saffron-dark">{realTimeStreak} Days</p>
               </div>
             </Card>
           </motion.div>
@@ -107,6 +121,32 @@ const AdminDashboard = ({ setActiveTab }) => {
         {stats.map((stat, i) => (
           <StatCard key={i} {...stat} />
         ))}
+      </div>
+
+      {/* Quick Actions Row */}
+      <div className="mb-10">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Command Center</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Add Devotee', icon: <Plus size={20} />, tab: 'devotees', color: 'bg-saffron text-white shadow-saffron/20' },
+            { label: 'New Event', icon: <Calendar size={20} />, tab: 'events', color: 'bg-gold text-white shadow-gold/20' },
+            { label: 'Verify Stay', icon: <Home size={20} />, tab: 'accommodation', color: 'bg-celestial text-white shadow-celestial/20' },
+            { label: 'Scan Check-in', icon: <CheckSquare size={20} />, tab: 'attendance', color: 'bg-purple-600 text-white shadow-purple-200' },
+          ].map((action, i) => (
+            <motion.button
+              key={i}
+              whileHover={{ y: -5, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveTab(action.tab)}
+              className={`flex items-center gap-3 p-4 rounded-2xl font-bold text-sm shadow-lg transition-all ${action.color}`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                {action.icon}
+              </div>
+              {action.label}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -166,7 +206,7 @@ const AdminDashboard = ({ setActiveTab }) => {
                 Recent Accommodation Requests
               </h2>
               <span className="px-3 py-1 bg-saffron/10 text-saffron text-[10px] font-black rounded-lg uppercase tracking-wider">
-                {allRequests.length} Pending
+                {allRequests.length} Pending Actions
               </span>
             </div>
             
@@ -188,7 +228,7 @@ const AdminDashboard = ({ setActiveTab }) => {
                         <td className="py-4 font-bold text-gray-700">{req.userName || 'Unknown'}</td>
                         <td className="py-4 text-sm text-gray-500">{req.type}</td>
                         <td className="py-4 text-sm text-gray-400 font-medium">
-                          {req.checkIn} → {req.checkOut}
+                          {req.arrivalDate} → {req.departureDate}
                         </td>
                         <td className="py-4">
                           <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded-lg uppercase tracking-wider">
@@ -203,7 +243,20 @@ const AdminDashboard = ({ setActiveTab }) => {
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan="5" className="py-10 text-center text-gray-400 italic">No pending requests at this time.</td>
+                        <td colSpan="5" className="py-20 text-center space-y-4">
+                           <div className="flex flex-col items-center justify-center text-gray-300">
+                             <ShieldCheck size={40} className="mb-4 opacity-20" />
+                             <p className="text-sm font-bold uppercase tracking-widest text-gray-400">All caught up!</p>
+                             <p className="text-xs mt-1">No pending accommodation requests.</p>
+                             <Button 
+                              variant="secondary" 
+                              onClick={() => setActiveTab('accommodation')}
+                              className="mt-6 border-saffron/20 text-saffron-dark hover:bg-saffron/5"
+                             >
+                               Create New Request
+                             </Button>
+                           </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -236,6 +289,63 @@ const AdminDashboard = ({ setActiveTab }) => {
           </Card>
 
           <Card className="p-8 border-none shadow-premium bg-white">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Trophy size={20} className="text-gold" />
+                Top Performers
+              </h3>
+              <button 
+                onClick={() => setActiveTab('devotees')} 
+                className="text-xs font-bold text-saffron uppercase tracking-widest hover:underline"
+              >
+                View All
+              </button>
+            </div>
+            <div className="max-h-[410px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-saffron/20 scrollbar-track-transparent">
+              <div className="space-y-4">
+                {allUsers
+                  .sort((a, b) => (b.score || 0) - (a.score || 0))
+                  .slice(0, 20)
+                  .map((d, i) => (
+                    <div key={d.id} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group border border-transparent hover:border-saffron/10">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-saffron/10 to-gold/10 flex items-center justify-center font-bold text-saffron-dark overflow-hidden">
+                          {d.photo ? (
+                            <img 
+                              src={getSafeProfileImage(d.photo, d.name)} 
+                              alt="" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span>{d.name?.charAt(0) || 'D'}</span>
+                          )}
+                        </div>
+                        {i < 3 && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gold text-[8px] flex items-center justify-center text-white border-2 border-white font-black">
+                            {i + 1}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-800 text-sm truncate max-w-[120px]">{d.name}</p>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                           <Flame size={10} className="text-saffron" />
+                           <span>{d.streak || 0}d Streak</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                       <p className="font-black text-saffron-dark text-sm">{Math.max(0, d.score || 0)}</p>
+                       <p className="text-[10px] font-bold text-gray-300 uppercase">Points</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </Card>
+
+          <Card className="p-8 border-none shadow-premium bg-white">
             <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
               <Users size={20} className="text-saffron" />
               Devotee Reports
@@ -259,6 +369,30 @@ const AdminDashboard = ({ setActiveTab }) => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-50">
+               <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">Devotee Levels (1-5)</h4>
+               <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((lvl) => {
+                    const count = allUsers.filter(u => u.level === String(lvl)).length;
+                    const pct = (count / (allUsers.length || 1)) * 100;
+                    return (
+                      <div 
+                        key={lvl} 
+                        className={`h-1.5 rounded-full transition-all duration-700 ${
+                          lvl === 1 ? 'bg-saffron' : lvl === 2 ? 'bg-gold' : lvl === 3 ? 'bg-celestial' : lvl === 4 ? 'bg-purple-400' : 'bg-green-400'
+                        }`}
+                        style={{ width: `${pct}%`, minWidth: count > 0 ? '4px' : '0' }}
+                        title={`Level ${lvl}: ${count} devotees`}
+                      />
+                    )
+                  })}
+               </div>
+               <div className="flex justify-between mt-3">
+                  <span className="text-[9px] font-bold text-gray-300 uppercase">Foundation</span>
+                  <span className="text-[9px] font-bold text-gray-300 uppercase">Expert</span>
+               </div>
             </div>
             <div className="mt-8 pt-6 border-t border-gray-50">
                <div className="p-4 bg-cream/30 rounded-2xl border border-saffron/10 mb-4">

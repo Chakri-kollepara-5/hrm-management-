@@ -20,6 +20,8 @@ const Events = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [submitting, setSubmitting] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState({});
   
   const [formData, setFormData] = useState({
     title: '',
@@ -33,30 +35,7 @@ const Events = () => {
 
   const categories = ['All', 'Retreats', 'Kirtans', 'Yatras', 'Seminars', 'Other']
   
-  const mockEvents = [
-    {
-      id: 'mock1',
-      title: 'Vrindavan Kartik Yatra 2026',
-      date: 'Oct 20 - Nov 19, 2026',
-      location: 'Vrindavan, UP',
-      category: 'Yatras',
-      attendees: '450+',
-      img: 'https://images.unsplash.com/photo-1545127398-14699f92334b?auto=format&fit=crop&q=80&w=800',
-      description: 'A spiritual journey to the holy land of Vrindavan during the auspicious month of Kartik. Experience ecstatic kirtans and deep parikramas.'
-    },
-    {
-      id: 'mock2',
-      title: 'Maha Abhishek Festival',
-      date: 'Aug 15, 2026',
-      location: 'Main Temple Hall',
-      category: 'Other',
-      attendees: '1200+',
-      img: 'https://images.unsplash.com/photo-1560930950-5cc60f86a395?auto=format&fit=crop&q=80&w=800',
-      description: 'Grand bathing ceremony of their Lordships with sacred substances and ecstatic kirtan. A day of divine joy.'
-    }
-  ]
-
-  const events = (firestoreEvents && firestoreEvents.length > 0) ? firestoreEvents : mockEvents;
+  const events = firestoreEvents || [];
   
   const filteredEvents = activeCategory === 'All' 
     ? events 
@@ -64,6 +43,7 @@ const Events = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const rawDate = new Date(formData.date);
       const formattedDate = rawDate.toLocaleString('en-US', {
@@ -92,30 +72,43 @@ const Events = () => {
         title: '', date: '', location: '', category: 'Retreats',
         description: '', img: 'https://picsum.photos/seed/temple/800/400', attendees: '0'
       });
+      setSubmitting(false);
     } catch (error) {
+      setSubmitting(false);
       console.error("Error adding event:", error);
       alert("Failed to create event: " + error.message);
     }
   };
 
   const handleRSVP = async (event, isAttending) => {
-    if (!user) return;
+    if (!user) {
+      alert("Please login to RSVP");
+      return;
+    }
+    setRsvpLoading(prev => ({ ...prev, [event.id]: true }));
     try {
       const token = isAttending ? uuidv4().slice(0, 8).toUpperCase() : null;
       const status = isAttending ? 'Attending' : 'Not Attending';
       const registrationRef = doc(db, 'registrations', `${event.id}_${user.uid}`);
       
       const prevState = registrations?.find(r => r.eventId === event.id)?.status;
-      if (prevState === status) return;
+      if (prevState === status) {
+        setRsvpLoading(prev => ({ ...prev, [event.id]: false }));
+        return;
+      }
       
       let attendingDiff = isAttending ? 1 : (prevState === 'Attending' ? -1 : 0);
       let declinedDiff = !isAttending ? 1 : (prevState === 'Not Attending' ? -1 : 0);
       
       const eventRef = doc(db, 'events', event.id);
-      await updateDoc(eventRef, {
-        attendingCount: increment(attendingDiff),
-        declinedCount: increment(declinedDiff)
-      });
+      
+      // If it's a real event, update its counts
+      if (!event.id.startsWith('mock')) {
+        await updateDoc(eventRef, {
+          attendingCount: increment(attendingDiff),
+          declinedCount: increment(declinedDiff)
+        });
+      }
       
       await setDoc(registrationRef, {
         eventId: event.id,
@@ -131,6 +124,8 @@ const Events = () => {
     } catch (error) {
       console.error("Registration error:", error);
       alert("Failed to RSVP: " + error.message);
+    } finally {
+      setRsvpLoading(prev => ({ ...prev, [event.id]: false }));
     }
   };
 
@@ -256,12 +251,33 @@ const Events = () => {
                    </div>
                 </div>
 
-                <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center gap-6">
-                   <Button onClick={() => handleRSVP(filteredEvents[0], true)} className="w-full sm:w-auto px-10 py-5 bg-white text-gray-900 font-black rounded-3xl hover:bg-cream transition-all uppercase tracking-[0.2em] text-[11px] shadow-2xl">
-                      I will Attend
-                   </Button>
-                   <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">{filteredEvents[0].attendees} Devotees expected</p>
-                </div>
+                 <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center gap-6">
+                    {(() => {
+                        const event = filteredEvents[0];
+                        const reg = registrations?.find(r => r.eventId === event.id);
+                        if (reg?.status === 'Attending') return (
+                          <div className="px-10 py-5 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 flex items-center gap-4">
+                             <CheckCircle2 size={24} className="text-green-400" />
+                             <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Your Token</span>
+                                <span className="text-lg font-black text-white tracking-widest">{reg.token}</span>
+                             </div>
+                          </div>
+                        );
+                        return (
+                          <Button 
+                            disabled={rsvpLoading[event.id]}
+                            onClick={() => handleRSVP(event, true)} 
+                            className="w-full sm:w-auto px-10 py-5 bg-white text-gray-900 font-black rounded-3xl hover:bg-cream transition-all uppercase tracking-[0.2em] text-[11px] shadow-2xl disabled:opacity-50"
+                          >
+                             {rsvpLoading[event.id] ? <Loader2 className="animate-spin mx-auto" size={18} /> : "I will Attend"}
+                          </Button>
+                        );
+                    })()}
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">
+                        {filteredEvents[0].attendingCount || filteredEvents[0].attendees || 0} Devotees expected
+                    </p>
+                 </div>
              </div>
           </Card>
         )}
@@ -279,7 +295,7 @@ const Events = () => {
                        <div className="absolute bottom-6 right-6">
                           <div className="flex items-center gap-2 bg-gray-900/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
                              <Users size={12} className="text-gold" />
-                             <span className="text-[10px] font-black text-white uppercase">{event.attendingCount || 0}</span>
+                             <span className="text-[10px] font-black text-white uppercase">{event.attendingCount || event.attendees || 0}</span>
                           </div>
                        </div>
                     </div>
@@ -306,8 +322,16 @@ const Events = () => {
                                </div>
                              );
                              return (
-                               <Button onClick={() => handleRSVP(event, true)} className="py-3 px-6 bg-saffron text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:shadow-saffron/20 group">
-                                  JOIN <ChevronRight size={14} className="ml-1 group-hover:translate-x-1" />
+                               <Button 
+                                 disabled={rsvpLoading[event.id]}
+                                 onClick={() => handleRSVP(event, true)} 
+                                 className="py-3 px-6 bg-saffron text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:shadow-saffron/20 group disabled:opacity-50"
+                               >
+                                  {rsvpLoading[event.id] ? <Loader2 className="animate-spin mx-auto" size={14} /> : (
+                                    <div className="flex items-center">
+                                      JOIN <ChevronRight size={14} className="ml-1 group-hover:translate-x-1" />
+                                    </div>
+                                  )}
                                </Button>
                              );
                           })()}

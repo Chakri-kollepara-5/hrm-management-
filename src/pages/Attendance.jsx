@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
   Clock, 
@@ -16,6 +16,7 @@ import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import Card from '../components/ui/Card'
 import { useFirestore } from '../hooks/useFirestore'
+import { useAuth } from '../hooks/useAuth'
 
 const Attendance = () => {
   const { user } = useAuth();
@@ -74,7 +75,10 @@ const Attendance = () => {
       }
     } catch (error) {
       console.error("Verification error:", error);
-      setVerifyResult({ success: false, message: 'Error verifying token' });
+      const msg = error.code === 'permission-denied' 
+        ? 'Permission Denied: Admin access required for verification.' 
+        : 'Error verifying token. Please check your connection.';
+      setVerifyResult({ success: false, message: msg });
     } finally {
       setVerifying(false);
     }

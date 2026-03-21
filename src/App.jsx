@@ -72,6 +72,8 @@ function App() {
         return <Accommodation />
       case 'attendance': 
         return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><Attendance /></UserRoleGuard>
+      case 'admin':
+        return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><AdminDashboard setActiveTab={setActiveTab} /></UserRoleGuard>
       default: 
         return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><AdminDashboard setActiveTab={setActiveTab} /></UserRoleGuard>
     }

@@ -13,6 +13,8 @@ import {
   signOut
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getSafeProfileImage } from '../lib/imageUtils';
+
 
 export const AuthContext = createContext();
 
@@ -99,7 +101,7 @@ export const AuthProvider = ({ children }) => {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email || '',
         name: finalName,
-        photo: auth.currentUser.photoURL || '',
+        photo: getSafeProfileImage(auth.currentUser.photoURL, auth.currentUser.displayName),
         role: assignedRole, 
         createdAt: serverTimestamp()
       };
