@@ -16,8 +16,10 @@ import {
   X,
   Flame,
   Star,
-  Trophy
+  Trophy,
+  QrCode
 } from 'lucide-react';
+import QRView from '../components/qr/QRView';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -44,6 +46,7 @@ const Devotees = () => {
     role: 'devotee',
     level: '1'
   });
+  const [qrModalDevotee, setQrModalDevotee] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, 'users'));
@@ -172,6 +175,13 @@ const Devotees = () => {
                 <Card className="group hover:shadow-premium-xl transition-all duration-300 border-none bg-white relative overflow-hidden h-full shadow-md">
                   <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex gap-2">
+                      <button 
+                        onClick={() => setQrModalDevotee(devotee)}
+                        className="p-2 bg-saffron/5 text-saffron rounded-lg hover:bg-saffron/10 transition-colors"
+                        title="View Vaikuntha ID"
+                      >
+                        <QrCode size={16} />
+                      </button>
                       <button 
                         onClick={() => handleEdit(devotee)}
                         className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
@@ -364,6 +374,51 @@ const Devotees = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* QR Modal */}
+      <AnimatePresence>
+        {qrModalDevotee && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setQrModalDevotee(null)}
+              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[3.5rem] shadow-premium-xl p-10 overflow-hidden text-center border border-white"
+            >
+              <button 
+                onClick={() => setQrModalDevotee(null)}
+                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="mb-4">
+                <span className="text-[10px] font-black text-saffron uppercase tracking-[0.4rem] block mb-2">Vaikuntha ID Card</span>
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase italic leading-none mb-10">Permanent pass</h2>
+              </div>
+
+              {qrModalDevotee.qrToken ? (
+                <QRView value={qrModalDevotee.qrToken} name={qrModalDevotee.name} />
+              ) : (
+                <div className="py-12 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
+                   <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Generating Token...</p>
+                </div>
+              )}
+
+              <p className="mt-8 text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                Scan for Attendance & Prasadam <br/>
+                <span className="text-saffron-dark/40 font-black">Folkvizag Devotee Management</span>
+              </p>
             </motion.div>
           </div>
         )}

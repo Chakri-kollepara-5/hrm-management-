@@ -8,10 +8,19 @@ import {
   QrCode,
   Calendar,
   Filter,
-  CheckCircle2,
+  Ticket,
+  Zap,
+  Check,
+  ChevronRight,
+  Trash2,
+  CalendarDays,
   XCircle,
-  Ticket
+  CheckCircle2,
+  Info,
+  Home,
+  QrCode as QrIcon
 } from 'lucide-react'
+import QRScanner from '../components/qr/QRScanner'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import Card from '../components/ui/Card'
@@ -26,59 +35,259 @@ const Attendance = () => {
   const [tokenInput, setTokenInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState(null);
+  
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanMode, setScanMode] = useState('attendance'); // 'attendance' | 'prasadam'
+  const [selectedEventId, setSelectedEventId] = useState('');
+  
+  const { data: events } = useFirestore('events');
 
   const { data: myRegistrations } = useFirestore('registrations', React.useMemo(() => [
     where('userId', '==', user?.uid || '')
   ], [user?.uid]));
 
   const filteredCheckins = checkins.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.session?.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     c.session?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (!selectedEventId || c.eventId === selectedEventId)
   );
+
+  const handleScan = async (qrToken) => {
+    if (!selectedEventId) {
+      setVerifyResult({ success: false, message: 'Please select an event first!' });
+      return;
+    }
+    
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      // 1. Find user by qrToken
+      const userQ = query(collection(db, 'users'), where('qrToken', '==', qrToken));
+      const userSnap = await getDocs(userQ);
+      
+      if (userSnap.empty) throw new Error('Invalid QR Code / Devotee not found');
+      
+      const devotee = { id: userSnap.docs[0].id, ...userSnap.docs[0].data() };
+      const event = events.find(e => e.id === selectedEventId);
+      
+      if (scanMode === 'attendance') {
+        // Attendance Logic
+        const checkinQ = query(collection(db, 'attendance'), 
+          where('userId', '==', devotee.id),
+          where('eventId', '==', selectedEventId)
+        );
+        const checkinSnap = await getDocs(checkinQ);
+        
+        if (!checkinSnap.empty) throw new Error(`${devotee.name} already checked in!`);
+        
+        // Check for Accommodation
+        let accInfo = null;
+        try {
+          const accQ = query(collection(db, 'accommodation_requests'), 
+            where('userId', '==', devotee.id),
+            where('status', '==', 'Approved')
+          );
+          const accSnap = await getDocs(accQ);
+          if (!accSnap.empty) {
+            accInfo = accSnap.docs[0].data();
+          }
+        } catch (e) { console.error("Acc fetch error", e); }
+
+        setVerifyResult({ 
+          success: true, 
+          message: `Welcome ${devotee.name}! Attendance marked.`,
+          accommodation: accInfo
+        });
+      } else {
+        // Prasadam Logic
+        const prasadamQ = query(collection(db, 'prasadam_logs'), 
+          where('userId', '==', devotee.id),
+          where('eventId', '==', selectedEventId)
+        );
+        const prasadamSnap = await getDocs(prasadamQ);
+        
+        if (!prasadamSnap.empty) throw new Error(`${devotee.name} already received prasadam!`);
+        
+        await addDoc(collection(db, 'prasadam_logs'), {
+          userId: devotee.id,
+          name: devotee.name,
+          eventId: selectedEventId,
+          eventTitle: event?.title || 'Unknown Event',
+          received: true,
+          timestamp: serverTimestamp()
+        });
+        // Check for Accommodation
+        let accInfo = null;
+        try {
+          const accQ = query(collection(db, 'accommodation_requests'), 
+            where('userId', '==', devotee.id),
+            where('status', '==', 'Approved')
+          );
+          const accSnap = await getDocs(accQ);
+          if (!accSnap.empty) {
+            accInfo = accSnap.docs[0].data();
+          }
+        } catch (e) { console.error("Acc fetch error", e); }
+
+        setVerifyResult({ 
+          success: true, 
+          message: `Mahaprasadam served to ${devotee.name}!`,
+          accommodation: accInfo 
+        });
+      }
+    } catch (error) {
+      console.error("Scan error:", error);
+      setVerifyResult({ success: false, message: error.message });
+    } finally {
+      setVerifying(false);
+      setShowScanner(false);
+    }
+  };
 
   const handleVerifyToken = async (e) => {
     e.preventDefault();
     if (!tokenInput) return;
+    if (!selectedEventId) {
+      setVerifyResult({ success: false, message: 'Select an event first!' });
+      return;
+    }
     setVerifying(true);
     setVerifyResult(null);
     try {
-      const q = query(collection(db, 'registrations'), where('token', '==', tokenInput.toUpperCase()));
-      const snap = await getDocs(q);
+      const input = tokenInput.toUpperCase();
+      let targetEventId = selectedEventId;
+      let targetEventTitle = events.find(e => e.id === selectedEventId)?.title || 'Current Event';
+
+      // Auto-event fallback if none selected
+      if (!targetEventId && events.length > 0) {
+        targetEventId = events[0].id;
+        targetEventTitle = events[0].title;
+      }
+
+      if (!targetEventId) throw new Error('No events available to mark attendance.');
+
+      // 1. Try Registrations first (standard token)
+      const regQ = query(collection(db, 'registrations'), where('token', '==', input));
+      const regSnap = await getDocs(regQ);
       
-      if (!snap.empty) {
-        const regData = snap.docs[0].data();
-        // Check if already checked in
+      let devoteeData = null;
+      let notice = null;
+
+      if (!regSnap.empty) {
+        const regDoc = regSnap.docs[0].data();
+        devoteeData = { id: regDoc.userId, name: regDoc.userName };
+        if (regDoc.eventId !== targetEventId) {
+          notice = `Note: Registered for "${regDoc.eventTitle || 'another event'}"`;
+        }
+      } else {
+        // 2. Try Universal ID (QR Token or UID prefix)
+        const userQ = query(collection(db, 'users'), where('qrToken', '==', tokenInput));
+        const userSnap = await getDocs(userQ);
+        
+        if (!userSnap.empty) {
+          const userDoc = userSnap.docs[0].data();
+          devoteeData = { id: userSnap.docs[0].id, name: userDoc.fullName || userDoc.displayName || 'Devotee' };
+          notice = "Verified via Universal Vaikuntha ID";
+        } else {
+          // 3. Try fallback to finding by UID directly if it looks like one (simple check)
+          if (input.length >= 8) {
+             const uidQ = query(collection(db, 'users'), where('uid', '==', tokenInput)); // or use doc() if it's exact
+             const uidSnap = await getDocs(uidQ);
+             if (!uidSnap.empty) {
+                const ud = uidSnap.docs[0].data();
+                devoteeData = { id: uidSnap.docs[0].id, name: ud.fullName || ud.displayName || 'Devotee' };
+                notice = "Verified via System UID";
+             }
+          }
+        }
+      }
+
+      if (!devoteeData) throw new Error('No registration or devotee found with this code.');
+
+      if (scanMode === 'attendance') {
         const checkinQ = query(collection(db, 'attendance'), 
-          where('userId', '==', regData.userId),
-          where('eventId', '==', regData.eventId)
+          where('userId', '==', devoteeData.id),
+          where('eventId', '==', targetEventId)
         );
         const checkinSnap = await getDocs(checkinQ);
         
         if (!checkinSnap.empty) {
-          setVerifyResult({ success: false, message: 'Already checked in!' });
+          setVerifyResult({ success: false, message: 'Already checked in for this event!' });
         } else {
-          // Record check-in
           await addDoc(collection(db, 'attendance'), {
-            userId: regData.userId,
-            name: regData.userName,
-            eventId: regData.eventId,
-            session: regData.eventTitle,
+            userId: devoteeData.id,
+            name: devoteeData.name,
+            eventId: targetEventId,
+            session: targetEventTitle,
             status: 'On-time',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             createdAt: serverTimestamp()
           });
-          setVerifyResult({ success: true, message: `Verified: ${regData.userName}` });
+
+          // Check for Accommodation
+          let accInfo = null;
+          try {
+            const accQ = query(collection(db, 'accommodation_requests'), 
+              where('userId', '==', devoteeData.id),
+              where('status', '==', 'Approved')
+            );
+            const accSnap = await getDocs(accQ);
+            if (!accSnap.empty) accInfo = accSnap.docs[0].data();
+          } catch (e) { console.error("Acc fetch error", e); }
+
+          setVerifyResult({ 
+            success: true, 
+            message: `Entry Allowed for ${targetEventTitle}`,
+            devotee: devoteeData,
+            notice: notice,
+            accommodation: accInfo
+          });
           setTokenInput('');
         }
       } else {
-        setVerifyResult({ success: false, message: 'Invalid Token' });
+        // Universal Manual Token for Prasadam
+        const prasadamQ = query(collection(db, 'prasadam_logs'), 
+          where('userId', '==', devoteeData.id),
+          where('eventId', '==', targetEventId)
+        );
+        const prasadamSnap = await getDocs(prasadamQ);
+        
+        if (!prasadamSnap.empty) {
+          setVerifyResult({ success: false, message: 'Prasadam already received!' });
+        } else {
+          await addDoc(collection(db, 'prasadam_logs'), {
+            userId: devoteeData.id,
+            name: devoteeData.name,
+            eventId: targetEventId,
+            eventTitle: targetEventTitle,
+            received: true,
+            timestamp: serverTimestamp()
+          });
+
+          // Check for Accommodation
+          let accInfo = null;
+          try {
+            const accQ = query(collection(db, 'accommodation_requests'), 
+              where('userId', '==', devoteeData.id),
+              where('status', '==', 'Approved')
+            );
+            const accSnap = await getDocs(accQ);
+            if (!accSnap.empty) accInfo = accSnap.docs[0].data();
+          } catch (e) { console.error("Acc fetch error", e); }
+
+          setVerifyResult({ 
+            success: true, 
+            message: `Prasadam Served for ${targetEventTitle}`,
+            devotee: devoteeData,
+            notice: notice,
+            accommodation: accInfo 
+          });
+          setTokenInput('');
+        }
       }
     } catch (error) {
       console.error("Verification error:", error);
-      const msg = error.code === 'permission-denied' 
-        ? 'Permission Denied: Admin access required for verification.' 
-        : 'Error verifying token. Please check your connection.';
-      setVerifyResult({ success: false, message: msg });
+      setVerifyResult({ success: false, message: error.message });
     } finally {
       setVerifying(false);
     }
@@ -96,13 +305,25 @@ const Attendance = () => {
           <p className="text-sm text-gray-500">Real-time devotee check-ins and session tracking</p>
         </div>
         <div className="flex items-center gap-3">
-           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 shadow-sm hover:shadow-md transition-all">
-             <Filter size={16} />
-             <span>Filter</span>
-           </button>
-           <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saffron to-gold text-white rounded-xl text-sm font-bold shadow-lg hover:shadow-xl transition-all">
-             <QrCode size={16} />
-             <span>Scan QR</span>
+           <select 
+             value={selectedEventId}
+             onChange={(e) => setSelectedEventId(e.target.value)}
+             className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 shadow-sm outline-none focus:border-saffron min-w-[200px]"
+           >
+             <option value="">Select Active Event...</option>
+             {events?.map(e => (
+               <option key={e.id} value={e.id}>{e.title}</option>
+             ))}
+           </select>
+           <button 
+             onClick={() => {
+               setScanMode('attendance');
+               setShowScanner(true);
+             }}
+             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saffron to-gold text-white rounded-xl text-sm font-bold shadow-lg hover:shadow-xl transition-all"
+           >
+             <QrIcon size={16} />
+             <span>Scan Pass</span>
            </button>
         </div>
       </div>
@@ -125,7 +346,7 @@ const Attendance = () => {
               </div>
             </div>
 
-            <div className="-mx-6 sm:mx-0 overflow-x-auto pb-4 scrollbar-hide">
+            <div className="-mx-6 sm:mx-0 overflow-x-auto scrollbar-hide">
               <div className="min-w-[600px] sm:min-w-full px-6 sm:px-0">
                 <table className="w-full text-left">
                   <thead>
@@ -183,41 +404,158 @@ const Attendance = () => {
         <div className="space-y-6">
           {user?.role !== 'devotee' ? (
             <Card className="p-8 border-none shadow-premium bg-white">
-              <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <QrCode size={18} className="text-saffron" />
-                Verify Devotee Token
-              </h3>
-              <form onSubmit={handleVerifyToken} className="space-y-4">
-                <div className="relative">
-                  <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="Enter 8-digit token..."
-                    value={tokenInput}
-                    onChange={(e) => setTokenInput(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-saffron focus:bg-white transition-all font-mono font-bold uppercase tracking-widest text-lg"
-                  />
+            <h3 className="font-extrabold text-gray-800 mb-6 flex items-center gap-3 italic uppercase tracking-tighter">
+                <div className="w-10 h-10 bg-saffron/10 rounded-xl flex items-center justify-center text-saffron">
+                   <QrIcon size={20} />
                 </div>
+                Verify Attendee
+              </h3>
+              
+              <div className="space-y-4 mb-8">
+                <select 
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                  className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none transition-all hover:border-saffron focus:border-saffron"
+                >
+                  <option value="">Auto-Detect Active Event</option>
+                  {events?.map(e => (
+                    <option key={e.id} value={e.id}>{e.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 mb-6 p-1 bg-gray-50 rounded-2xl">
+                <button 
+                  onClick={() => setScanMode('attendance')}
+                  className={`flex-1 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                    scanMode === 'attendance' ? 'bg-white shadow-premium text-saffron border border-saffron/10' : 'text-gray-400'
+                  }`}
+                >
+                  Attendance Mode
+                </button>
+                <button 
+                  onClick={() => setScanMode('prasadam')}
+                  className={`flex-1 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                    scanMode === 'prasadam' ? 'bg-white shadow-premium text-orange-600 border border-orange-100' : 'text-gray-400'
+                  }`}
+                >
+                  Prasadam Mode
+                </button>
+              </div>
+
+              <div className="space-y-4">
                 <button 
                   disabled={verifying}
-                  className="w-full py-4 bg-saffron text-white rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                  onClick={() => setShowScanner(true)}
+                  className="w-full py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-premium-xl flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
                 >
-                  {verifying ? 'Checking...' : 'Check-in Devotee'}
+                  <QrIcon size={20} />
+                  Open Camera Scanner
                 </button>
-              </form>
-              
+                
+                <div className="relative flex items-center gap-4 py-2">
+                  <div className="h-px flex-1 bg-gray-100" />
+                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">or use token</span>
+                  <div className="h-px flex-1 bg-gray-100" />
+                </div>
+
+                <form onSubmit={handleVerifyToken} className="space-y-4">
+                  <div className="relative">
+                    <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="8-digit token..."
+                      value={tokenInput}
+                      onChange={(e) => setTokenInput(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-saffron focus:bg-white transition-all font-mono font-bold uppercase tracking-widest text-lg"
+                    />
+                  </div>
+                  <button 
+                    disabled={verifying}
+                    className="w-full py-5 bg-saffron text-white rounded-2xl font-black shadow-premium-xl transition-all hover:scale-[1.02] disabled:opacity-50 uppercase tracking-widest text-xs"
+                  >
+                    {verifying ? 'Verifying...' : 'Verify Manual Token'}
+                  </button>
+                </form>
+              </div>
+
               <AnimatePresence>
                 {verifyResult && (
                   <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className={`mt-4 p-4 rounded-xl flex items-center gap-3 font-bold text-sm ${
-                      verifyResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className={`mt-6 overflow-hidden rounded-[2.5rem] shadow-premium-xl border-4 ${
+                      verifyResult.success 
+                        ? 'bg-white border-green-500' 
+                        : 'bg-white border-red-500'
                     }`}
                   >
-                    {verifyResult.success ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
-                    {verifyResult.message}
+                    <div className={`${verifyResult.success ? 'bg-green-500' : 'bg-red-500'} p-6 py-8 text-center text-white`}>
+                        <div className="flex flex-col items-center gap-2">
+                           {verifyResult.success ? (
+                             <>
+                               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-2">
+                                  <CheckCircle2 size={40} className="text-white" />
+                               </div>
+                               <h2 className="text-4xl font-black italic uppercase tracking-tighter">ALLOWED</h2>
+                             </>
+                           ) : (
+                             <>
+                               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-2">
+                                  <XCircle size={40} className="text-white" />
+                               </div>
+                               <h2 className="text-4xl font-black italic uppercase tracking-tighter">DENIED</h2>
+                             </>
+                           )}
+                           <p className="font-bold text-xs uppercase tracking-[0.3em] opacity-80">{verifyResult.message}</p>
+                        </div>
+                    </div>
+
+                    <div className="p-8 space-y-6">
+                      {verifyResult.success && verifyResult.devotee && (
+                        <div className="flex items-center gap-5">
+                          <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-3xl font-black text-gray-300 border border-gray-100 shadow-inner">
+                              {verifyResult.devotee.name?.charAt(0)}
+                          </div>
+                          <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Devotee Identity</span>
+                              <h3 className="text-2xl font-black text-gray-900 tracking-tighter italic uppercase">{verifyResult.devotee.name}</h3>
+                              <span className="text-[10px] font-mono font-bold text-saffron uppercase tracking-widest">ID: {verifyResult.devotee.id?.slice(0,12)}...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {verifyResult.notice && (
+                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3">
+                           <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                           <p className="text-[11px] font-bold text-blue-700 leading-tight">{verifyResult.notice}</p>
+                        </div>
+                      )}
+
+                      {verifyResult.accommodation && (
+                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 shadow-sm">
+                           <div className="flex items-center gap-2 mb-3">
+                              <Home size={14} className="text-amber-600" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">Reserved Stay</span>
+                           </div>
+                           <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-gray-800">{verifyResult.accommodation.type}</span>
+                              <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-lg border border-amber-100">
+                                 <Users size={12} className="text-amber-600" />
+                                 <span className="text-[10px] font-black text-amber-700">{verifyResult.accommodation.guestCount}</span>
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
+                      <button 
+                         onClick={() => setVerifyResult(null)}
+                         className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-black transition-all"
+                      >
+                         Dismiss
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -264,6 +602,15 @@ const Attendance = () => {
           </Card>
         </div>
       </div>
+      <AnimatePresence>
+        {showScanner && (
+          <QRScanner 
+            mode={scanMode}
+            onScan={handleScan}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

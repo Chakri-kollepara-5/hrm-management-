@@ -174,9 +174,9 @@ const Events = () => {
                <Megaphone size={16} />
                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Spiritual Gatherings</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-[0.8]">
+            <h1 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter leading-tight xl:leading-[0.8] uppercase">
               COMMUNITY<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron to-gold uppercase">Events</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron to-gold">Events</span>
             </h1>
           </div>
 
@@ -226,32 +226,32 @@ const Events = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
              </div>
              
-             <div className="relative z-10 p-10 sm:p-16 space-y-8">
-                <div className="flex gap-3">
+              <div className="relative z-10 p-8 sm:p-12 xl:p-16 space-y-6 sm:space-y-8">
+                <div className="flex flex-wrap gap-3">
                    <span className="px-4 py-1.5 bg-saffron text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">Featured</span>
                    <span className="px-4 py-1.5 bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/20">{filteredEvents[0].category}</span>
                 </div>
                 
-                <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter max-w-3xl leading-none italic uppercase">{filteredEvents[0].title}</h2>
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white tracking-tighter max-w-3xl leading-none italic uppercase">{filteredEvents[0].title}</h2>
                 
-                <div className="flex flex-wrap gap-10">
+                <div className="flex flex-wrap gap-6 sm:gap-10">
                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><Calendar className="text-gold" size={24} /></div>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><Calendar className="text-gold" size={20} /></div>
                       <div>
-                         <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</span>
-                         <span className="text-lg font-black text-white tracking-tight">{filteredEvents[0].date}</span>
+                         <span className="block text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</span>
+                         <span className="text-sm sm:text-lg font-black text-white tracking-tight">{filteredEvents[0].date}</span>
                       </div>
                    </div>
                    <div className="flex items-center gap-3 text-left">
-                      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><MapPin className="text-saffron" size={24} /></div>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20"><MapPin className="text-saffron" size={20} /></div>
                       <div className="text-left">
-                         <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Location</span>
-                         <span className="text-lg font-black text-white tracking-tight text-left">{filteredEvents[0].location}</span>
+                         <span className="block text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Location</span>
+                         <span className="text-sm sm:text-lg font-black text-white tracking-tight text-left">{filteredEvents[0].location}</span>
                       </div>
                    </div>
                 </div>
 
-                 <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center gap-6">
+                 <div className="pt-6 sm:pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {(() => {
                         const event = filteredEvents[0];
                         const reg = registrations?.find(r => r.eventId === event.id);

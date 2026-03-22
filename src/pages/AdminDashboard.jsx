@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Flame, Calendar, ChevronRight, Loader2, Sparkles, Quote, ShieldCheck, Plus, Bell, Users, Home, CheckSquare, Trophy } from 'lucide-react'
+import { Flame, Calendar, ChevronRight, Loader2, Sparkles, Quote, ShieldCheck, Plus, Bell, Users, Home, CheckSquare, Trophy, Heart } from 'lucide-react'
 import Button from '../components/ui/Button'
 import StatCard from '../components/dashboard/StatCard'
 import CircularProgress from '../components/sadhana/CircularProgress'
@@ -8,9 +8,10 @@ import TaskItem from '../components/sadhana/TaskItem'
 import Card from '../components/ui/Card'
 import { useAuth } from '../hooks/useAuth'
 import { useFirestore } from '../hooks/useFirestore'
-import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, limit } from 'firebase/firestore'
 import { getSafeProfileImage } from '../lib/imageUtils'
+import { functions } from '../lib/firebase'
+import { httpsCallable } from 'firebase/functions'
 
 const AdminDashboard = ({ setActiveTab }) => {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ const AdminDashboard = ({ setActiveTab }) => {
   const { data: allEvents, loading: eventsLoading } = useFirestore('events');
   const { data: allRequests, loading: requestsLoading } = useFirestore('accommodation_requests', requestsQuery);
   const { data: sadhanaLogs, loading: sadhanaLoading } = useFirestore('sadhana_logs', sadhanaQuery);
+  const { data: allSevas, loading: sevasLoading } = useFirestore('sevas');
 
   const currentUserData = allUsers.find(u => u.id === user?.uid) || {};
   const yesterday = new Date();
@@ -34,6 +36,10 @@ const AdminDashboard = ({ setActiveTab }) => {
   const yesterdayStr = yesterday.toISOString().split('T')[0];
   
   let realTimeStreak = currentUserData.streak || 0;
+  if (currentUserData.lastSadhanaDate && currentUserData.lastSadhanaDate !== today && currentUserData.lastSadhanaDate !== yesterdayStr) {
+    realTimeStreak = 0;
+  }
+
   if (currentUserData.lastSadhanaDate && currentUserData.lastSadhanaDate !== today && currentUserData.lastSadhanaDate !== yesterdayStr) {
     realTimeStreak = 0;
   }
@@ -66,6 +72,13 @@ const AdminDashboard = ({ setActiveTab }) => {
       color: 'saffron',
       onClick: () => setActiveTab('accommodation')
     },
+    { 
+      label: 'Seva Volunteers', 
+      value: allSevas.reduce((acc, s) => acc + (s.countRegistered || 0), 0).toString(), 
+      sub: `${allSevas.length} Active Sevas`, 
+      color: 'gold',
+      onClick: () => setActiveTab('seva')
+    },
   ];
 
   const tasks = [
@@ -74,7 +87,7 @@ const AdminDashboard = ({ setActiveTab }) => {
     { id: 'aarti_m', label: 'Morning Aarti', done: sadhanaLogs[0]?.tasks?.aarti_m || false },
   ];
 
-  if (usersLoading || eventsLoading || requestsLoading || sadhanaLoading) {
+  if (usersLoading || eventsLoading || requestsLoading || sadhanaLoading || sevasLoading) {
     return (
       <div className="h-[70vh] flex items-center justify-center">
         <Loader2 className="animate-spin text-saffron" size={48} />
@@ -130,6 +143,7 @@ const AdminDashboard = ({ setActiveTab }) => {
           {[
             { label: 'Add Devotee', icon: <Plus size={20} />, tab: 'devotees', color: 'bg-saffron text-white shadow-saffron/20' },
             { label: 'New Event', icon: <Calendar size={20} />, tab: 'events', color: 'bg-gold text-white shadow-gold/20' },
+            { label: 'Manage Seva', icon: <Heart size={20} />, tab: 'seva', color: 'bg-orange-500 text-white shadow-orange-200' },
             { label: 'Verify Stay', icon: <Home size={20} />, tab: 'accommodation', color: 'bg-celestial text-white shadow-celestial/20' },
             { label: 'Scan Check-in', icon: <CheckSquare size={20} />, tab: 'attendance', color: 'bg-purple-600 text-white shadow-purple-200' },
           ].map((action, i) => (
@@ -262,6 +276,41 @@ const AdminDashboard = ({ setActiveTab }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </Card>
+
+          <Card className="p-8 border-none shadow-premium bg-white overflow-hidden">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                <Heart className="text-orange-500" size={24} />
+                Seva Opportunity Monitoring
+              </h2>
+              <button onClick={() => setActiveTab('seva')} className="text-orange-500 font-bold hover:underline text-xs uppercase tracking-widest">Manage All</button>
+            </div>
+            
+            <div className="space-y-4">
+              {allSevas.length > 0 ? allSevas.slice(0, 5).map((seva) => (
+                <div key={seva.id} className="p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-orange-100 transition-all">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-bold text-gray-800">{seva.title}</h4>
+                    <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg uppercase">
+                      {seva.sevaType}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                    <span className="flex items-center gap-1"><Calendar size={12} /> {seva.date}</span>
+                    <span className="flex items-center gap-1"><Users size={12} /> {seva.countRegistered || 0} / {seva.maxVolunteers} Joined</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-orange-500 transition-all duration-500" 
+                      style={{ width: `${Math.min(100, ((seva.countRegistered || 0) / (seva.maxVolunteers || 1)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )) : (
+                <div className="p-10 text-center text-gray-300 italic">No active sevas to monitor.</div>
+              )}
             </div>
           </Card>
         </div>

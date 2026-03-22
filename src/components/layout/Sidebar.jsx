@@ -10,7 +10,8 @@ import {
   X, 
   Menu,
   ChevronRight,
-  Shield
+  Shield,
+  Heart
 } from 'lucide-react'
 import { cn } from '../ui/Card'
 import { useAuth } from '../../hooks/useAuth'
@@ -47,6 +48,7 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
     { id: 'admin', icon: <Shield />, label: "Command Center", roles: ['admin', 'folks_head'] },
     { id: 'devotees', icon: <User />, label: "Devotees", roles: ['admin', 'folks_head'] },
     { id: 'events', icon: <Calendar />, label: "Event Management", roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'seva', icon: <Heart />, label: "Seva Management", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'dashboard', icon: <TrendingUp />, label: "Sadhana Tracker", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home />, label: "Accommodation", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'attendance', icon: <CheckSquare />, label: "Attendance", roles: ['admin', 'folks_head'] },

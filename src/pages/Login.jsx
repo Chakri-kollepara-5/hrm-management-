@@ -144,16 +144,21 @@ const Login = () => {
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-24 h-24 mx-auto mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-500"
+              className="w-24 h-24 mx-auto mb-6 relative group"
             >
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bg-saffron/20 rounded-full blur-2xl -z-10"
+              />
               <img 
                 src="/logo.png" 
                 alt="Folkvizag Logo" 
-                className="w-full h-full object-contain filter sepia saturate-[8] hue-rotate-[-30deg] drop-shadow-[0_0_15px_rgba(255,153,51,0.4)]" 
+                className="w-full h-full object-contain filter brightness-0 opacity-90 transition-transform group-hover:scale-110 duration-500" 
               />
             </motion.div>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent font-poppins mb-2 tracking-tight">Folkvizag</h1>
-            <p className="text-gray-400 font-medium text-xs sm:text-sm">Digital Devotion & Management</p>
+            <h1 className="text-4xl font-black bg-gradient-to-r from-saffron via-gold to-saffron-dark bg-clip-text text-transparent font-cinzel mb-2 tracking-tighter drop-shadow-sm">Folkvizag</h1>
+            <p className="text-gray-400 text-sm font-bold uppercase tracking-[0.3em]">The Divine Journey Begins</p>
           </div>
 
           <AnimatePresence>
@@ -183,23 +188,24 @@ const Login = () => {
                   { id: 'devotee', title: 'Devotee', desc: 'Log sadhana, track attendance, and join events.', icon: <Users className="text-saffron" size={20} /> },
                   { id: 'folks_head', title: 'Folks Head', desc: 'Manage devotees, approve stays, create events.', icon: <Shield className="text-gold" size={20} /> }
                 ].map((role) => (
-                  <button key={role.id} onClick={() => setSelectedRole(role.id)} className={`flex items-start gap-4 p-4 rounded-3xl border-2 transition-all text-left group ${selectedRole === role.id ? 'border-saffron bg-saffron/5 shadow-lg scale-[1.02]' : 'border-gray-50 hover:border-gray-100 bg-gray-50/50'}`}>
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shrink-0 ${selectedRole === role.id ? 'bg-white shadow-md' : 'bg-gray-100'}`}>{role.icon}</div>
-                    <div className="flex-1">
+                  <button key={role.id} onClick={() => setSelectedRole(role.id)} className={`flex items-start gap-4 p-5 rounded-[2rem] border-2 transition-all text-left group relative overflow-hidden ${selectedRole === role.id ? 'border-saffron bg-saffron/5 shadow-premium scale-[1.02]' : 'border-gray-50 hover:border-gray-100 bg-gray-50/50'}`}>
+                    {selectedRole === role.id && <div className="absolute top-0 right-0 w-24 h-24 bg-saffron/5 rounded-full -mr-12 -mt-12 blur-2xl" />}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0 ${selectedRole === role.id ? 'bg-white shadow-md scale-110' : 'bg-gray-100'}`}>{role.icon}</div>
+                    <div className="flex-1 relative z-10">
                       <div className="flex justify-between items-center mb-1">
-                        <h4 className="font-bold text-gray-800 text-sm">{role.title}</h4>
-                        {selectedRole === role.id && <CheckCircle2 size={16} className="text-saffron" />}
+                        <h4 className="font-black text-gray-800 text-sm font-cinzel tracking-tight">{role.title}</h4>
+                        {selectedRole === role.id && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><CheckCircle2 size={16} className="text-saffron" /></motion.div>}
                       </div>
-                      <p className="text-[10px] text-gray-400 font-medium leading-relaxed">{role.desc}</p>
+                      <p className="text-[10px] text-gray-400 font-bold leading-relaxed tracking-wide">{role.desc}</p>
                     </div>
                   </button>
                 ))}
               </div>
 
               <div className="flex flex-col gap-3 pt-2">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={!selectedRole || loading} onClick={handleCompleteProfile} className="w-full py-4 bg-gradient-to-r from-saffron to-gold rounded-2xl font-bold text-white shadow-lg shadow-saffron/20 flex items-center justify-center gap-3 disabled:opacity-50 transition-all">
-                  {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <ArrowRight size={20} />}
-                  <span>Enter Folkvizag</span>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={!selectedRole || loading} onClick={handleCompleteProfile} className="w-full py-5 bg-gradient-to-r from-saffron via-gold to-saffron rounded-[2rem] font-black text-white shadow-premium-xl flex items-center justify-center gap-3 disabled:opacity-50 transition-all uppercase tracking-[0.2em] text-xs font-cinzel">
+                  {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <ArrowRight size={18} />}
+                  <span>Enter Application</span>
                 </motion.button>
               </div>
             </motion.div>

@@ -67,7 +67,7 @@ const Landing = ({ onLoginClick }) => {
       {/* Navbar overlay */}
       <nav className="fixed top-0 left-0 right-0 h-20 bg-white/60 backdrop-blur-2xl z-[100] flex items-center justify-between px-6 lg:px-12 shadow-sm border-b border-white/50">
         <div className="flex items-center gap-4">
-           <img src="/logo.png" alt="Folkvizag Logo" className="h-10 w-auto object-contain drop-shadow-md transition-transform hover:scale-105" />
+           <img src="/logo.png" alt="Folkvizag Logo" className="h-10 w-auto object-contain drop-shadow-md transition-transform hover:scale-105 brightness-0 opacity-90" />
         </div>
         <div className="hidden md:flex items-center gap-8 bg-white/80 px-8 py-3 rounded-full shadow-sm border border-gray-100">
            {['Sadhana', 'Events', 'Stay', 'About'].map(item => (
@@ -105,9 +105,9 @@ const Landing = ({ onLoginClick }) => {
                <span className="text-xs font-black text-gray-800 uppercase tracking-[0.2em]">The Ultimate Spiritual App</span>
             </div>
             
-            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[100px] font-black text-gray-900 tracking-tighter leading-[0.9] sm:leading-[0.85] drop-shadow-sm">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[100px] font-black text-gray-900 tracking-tighter leading-[0.9] sm:leading-[0.85] drop-shadow-sm font-cinzel">
                YOUR <br/>
-               <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-500 via-celestial to-blue-400">DIVINE</span> <br/>
+               <span className="text-transparent bg-clip-text bg-gradient-to-br from-saffron via-gold to-saffron-dark animate-gradient-x">DIVINE</span> <br/>
                <span className="relative">
                  JOURNEY.
                  <svg className="absolute w-full h-4 -bottom-4 left-0 text-gold opacity-50" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 10 Q 50 20 100 10" stroke="currentColor" strokeWidth="8" fill="none" strokeLinecap="round"/></svg>
@@ -207,7 +207,7 @@ const Landing = ({ onLoginClick }) => {
       <section id="sadhana" className="py-32 px-6 lg:px-12 max-w-[1400px] mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
            <span className="text-saffron font-black uppercase tracking-[0.3em] text-xs">Explore Features</span>
-            <h2 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter">Everything You Need.</h2>
+            <h2 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter font-cinzel">Everything You Need.</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -222,11 +222,11 @@ const Landing = ({ onLoginClick }) => {
              >
                 <div className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-[60px] opacity-0 group-hover:opacity-50 transition-opacity duration-700 ${f.color.split(' ')[0]}`} />
                 
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-8 border transition-transform duration-500 group-hover:scale-110 shadow-sm ${f.color}`}>
+                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-8 border transition-transform duration-500 group-hover:scale-110 shadow-sm bg-white/50 backdrop-blur-sm ${f.color}`}>
                    {f.icon}
                 </div>
                 
-                <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">{f.title}</h3>
+                <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight font-cinzel">{f.title}</h3>
                 <p className="text-sm font-medium text-gray-500 leading-relaxed mb-8 flex-1">{f.desc}</p>
                 
                 <button onClick={onLoginClick} className="mt-auto flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest group-hover:text-saffron transition-colors">
@@ -341,8 +341,8 @@ const Landing = ({ onLoginClick }) => {
            <div className="w-20 h-20 bg-saffron rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl rotate-3">
               <Sparkles size={36} fill="currentColor" />
            </div>
-           <h2 className="text-4xl md:text-8xl font-black text-gray-900 tracking-tighter leading-[0.9]">
-              Begin Your <br/> <span className="italic font-serif font-medium text-saffron">Journey.</span>
+           <h2 className="text-4xl md:text-8xl font-black text-gray-900 tracking-tighter leading-[0.9] font-cinzel">
+              Begin Your <br/> <span className="italic font-playfair font-medium text-saffron">Journey.</span>
            </h2>
            <p className="text-xl text-gray-500 font-medium max-w-xl mx-auto">
               Join Folk Vizag today. Track sadhana, book stays, attend events, and connect with a spiritual family.
@@ -356,7 +356,7 @@ const Landing = ({ onLoginClick }) => {
       {/* Minimal Footer */}
       <footer className="py-12 border-t border-gray-100 px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left bg-white">
           <div className="flex items-center gap-4">
-             <img src="/logo.png" alt="Folkvizag Logo" className="h-8 w-auto object-contain drop-shadow-sm" />
+             <img src="/logo.png" alt="Folkvizag Logo" className="h-8 w-auto object-contain drop-shadow-sm brightness-0 opacity-90" />
           </div>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} Folkvizag. Empowering Devotees.</p>
           <div className="flex items-center gap-8">

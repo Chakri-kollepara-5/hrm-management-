@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Landing from './pages/Landing'
 import Splash from './components/Splash'
 import Devotees from './pages/Devotees'
+import SevaDashboard from './pages/SevaDashboard'
 import { useAuth } from './hooks/useAuth'
 import UserRoleGuard from './components/auth/UserRoleGuard'
 
@@ -72,6 +73,8 @@ function App() {
         return <Accommodation />
       case 'attendance': 
         return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><Attendance /></UserRoleGuard>
+      case 'seva':
+        return <SevaDashboard />
       case 'admin':
         return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><AdminDashboard setActiveTab={setActiveTab} /></UserRoleGuard>
       default: 

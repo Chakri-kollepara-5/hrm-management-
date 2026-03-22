@@ -8,12 +8,15 @@ import { useAuth } from '../hooks/useAuth'
 import { db } from '../lib/firebase'
 import { collection, doc, getDoc, getDocs, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import QRView from '../components/qr/QRView'
+import { QrCode } from 'lucide-react'
 
 const SadhanaTracker = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [sadhanaData, setSadhanaData] = useState({ profile: {}, logs: [] });
+  const [showQR, setShowQR] = useState(false);
+  const [sadhanaData, setSadhanaData] = useState({ profile: {}, logs: [], attendance: [], prasadam: [] });
   const [inputRounds, setInputRounds] = useState('');
   const [targetInput, setTargetInput] = useState(16);
   const [showSaved, setShowSaved] = useState(false);
@@ -55,7 +58,49 @@ const SadhanaTracker = () => {
         const logsSnap = await getDocs(q);
         const logs = logsSnap.docs.map(doc => doc.data());
         profileStats.totalLogs = logs.length;
-        setSadhanaData({ profile: profileStats, logs: logs.reverse() });
+
+        // Fetch user's attendance and prasadam logs with in-memory sorting to bypass index requirements
+        let attendanceLogs = [];
+        let prasadamLogs = [];
+        
+        try {
+          // Alternative: Query only by userId and sort in JS
+          const attQ = query(collection(db, 'attendance'), where('userId', '==', user.uid));
+          const attSnap = await getDocs(attQ);
+          attendanceLogs = attSnap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => {
+               const timeA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+               const timeB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+               return timeB - timeA;
+            })
+            .slice(0, 5);
+        } catch (attError) {
+          console.error("Error fetching attendance logs:", attError.message);
+        }
+
+        try {
+          // Alternative: Query only by userId and sort in JS
+          const prasQ = query(collection(db, 'prasadam_logs'), where('userId', '==', user.uid));
+          const prasSnap = await getDocs(prasQ);
+          prasadamLogs = prasSnap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => {
+               const timeA = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
+               const timeB = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
+               return timeB - timeA;
+            })
+            .slice(0, 5);
+        } catch (prasError) {
+          console.error("Error fetching prasadam logs:", prasError.message);
+        }
+        
+        setSadhanaData({ 
+          profile: profileStats, 
+          logs: logs.reverse(),
+          attendance: attendanceLogs,
+          prasadam: prasadamLogs
+        });
         setIndexBuilding(false);
       } catch (innerError) {
         if (innerError.message?.includes('index') || innerError.code === 'failed-precondition') {
@@ -545,57 +590,104 @@ const SadhanaTracker = () => {
                </div>
             </Card>
 
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-12 gap-12">
-               {/* Concept Card */}
-               <Card className="md:col-span-5 p-10 sm:p-12 bg-gray-900 border-none shadow-premium-xl rounded-[3.5rem] text-white overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 transition-all duration-1000 group-hover:scale-[2.5] group-hover:-rotate-12 group-hover:translate-x-10 group-hover:-translate-y-10">
-                     <Zap size={180} fill="currentColor" />
+             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
+               {/* Digital Identity QR */}
+               <Card className="md:col-span-5 p-10 sm:p-12 bg-white border-none shadow-premium-xl rounded-[3.5rem] relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 -mr-10 -mt-10 group-hover:opacity-10 transition-all duration-700">
+                     <QrCode size={180} />
                   </div>
-                  <div className="relative z-10 h-full flex flex-col justify-between">
-                     <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 mb-10">
-                        <Info size={28} className="text-saffron" />
-                     </div>
-                     <div className="space-y-6">
-                        <h4 className="text-3xl font-black tracking-tight leading-none uppercase italic text-left">HOW IT <br/>WORKS</h4>
-                        <div className="space-y-6 pt-8 border-t border-white/10">
-                           {[
-                              { label: '1. SET TARGET', desc: 'Your daily commitment', icon: Target },
-                              { label: '2. MAINTAIN STREAK', desc: 'Finish target every day', icon: Flame },
-                              { label: '3. EARN SCORE', desc: 'Get points for effort', icon: Star }
-                           ].map((item, i) => (
-                              <div key={i} className="flex items-center gap-5 group/item transition-all hover:translate-x-2">
-                                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover/item:bg-saffron/20 group-hover/item:text-saffron transition-colors">
-                                    <item.icon size={18} />
-                                 </div>
-                                 <div className="flex flex-col text-left">
-                                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] text-left">{item.label}</span>
-                                    <span className="text-sm font-bold text-white tracking-tight text-left">{item.desc}</span>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     </div>
+                  <div className="relative z-10 h-full flex flex-col items-center">
+                    <div className="text-center mb-8">
+                      <span className="text-[10px] font-black text-saffron uppercase tracking-[0.4rem] block mb-2 font-cinzel">VAIKUNTHA PASS</span>
+                      <h4 className="text-3xl font-black text-gray-900 tracking-tighter leading-none uppercase italic">Your ID</h4>
+                    </div>
+                    
+                    <div className="bg-cream/50 p-6 rounded-[2.5rem] border border-saffron/10 mb-8 w-full flex justify-center">
+                       {user?.qrToken && (
+                         <QRView value={user.qrToken} name={user.fullName || user.displayName || 'Devotee'} size={150} />
+                       )}
+                    </div>
+
+                    <p className="text-[10px] font-bold text-gray-400 text-center uppercase tracking-widest leading-relaxed">
+                      Permanent code for Attendance & <br/> Prasadam distribution
+                    </p>
                   </div>
                </Card>
 
-               <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-8 bg-white p-4 rounded-[4rem] shadow-premium-xl border border-gray-100 min-h-[400px]">
+               {/* Sacred Rules Info Grid */}
+               <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 min-h-[400px]">
                    {[
-                      { l: 'EARNINGS', v: '2 pts', d: 'Get 2 points for every round done', c: 'text-blue-500', bg: 'bg-blue-50/70', icon: ShieldCheck },
-                      { l: 'TARGET BONUS', v: '+10 pts', d: 'Extra points when goal reached', c: 'text-green-600', bg: 'bg-green-50/70', icon: CheckCircle2 },
-                      { l: 'CONSISTENCY', v: 'BIG BONUS', d: 'Higher streaks = More points', c: 'text-purple-600', bg: 'bg-purple-50/70', icon: TrendingUp },
-                      { l: 'STREAK RULE', v: 'STRICT', d: 'Miss 1 day = Streak becomes 0', c: 'text-red-500', bg: 'bg-red-50/70', icon: Zap }
+                      { l: 'EARNINGS', v: '2 pts', d: 'Every round counts', c: 'text-blue-500', bg: 'bg-blue-50/70', icon: ShieldCheck },
+                      { l: 'BONUS', v: '+10 pts', d: 'When goal reached', c: 'text-green-600', bg: 'bg-green-50/70', icon: CheckCircle2 },
+                      { l: 'STREAK', v: 'BOOST', d: 'Higher streaks = More pts', c: 'text-purple-600', bg: 'bg-purple-50/70', icon: TrendingUp },
+                      { l: 'RULE', v: 'STRICT', d: 'Miss 1 day = Streak 0', c: 'text-red-500', bg: 'bg-red-50/70', icon: Zap }
                    ].map((item, i) => (
-                      <div key={i} className={`${item.bg} p-10 rounded-[3rem] transition-all hover:scale-[1.03] hover:bg-white hover:shadow-2xl border border-transparent hover:border-gray-100 group relative overflow-hidden flex flex-col justify-between`}>
-                         <div className="flex items-center justify-between mb-6 relative z-10">
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-gray-900 transition-colors uppercase">{item.l}</span>
-                            <div className={`text-xs font-black ${item.c} bg-white shadow-xl px-4 py-1.5 rounded-full border border-gray-50`}>{item.v}</div>
+                      <div key={i} className={`${item.bg} p-8 rounded-[2.5rem] transition-all hover:scale-[1.03] hover:bg-white hover:shadow-2xl border border-transparent hover:border-gray-100 group relative overflow-hidden flex flex-col justify-between`}>
+                         <div className="flex items-center justify-between mb-4 relative z-10">
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-gray-900 transition-colors uppercase">{item.l}</span>
+                            <div className={`text-[9px] font-black ${item.c} bg-white shadow-md px-3 py-1 rounded-full border border-gray-50`}>{item.v}</div>
                          </div>
-                         <p className="text-[15px] font-bold text-gray-700 leading-tight group-hover:translate-x-2 transition-transform relative z-10">{item.d}</p>
-                         <item.icon className={`absolute -bottom-4 -right-4 opacity-5 group-hover:opacity-10 transition-opacity ${item.c}`} size={120} />
+                         <p className="text-xs font-bold text-gray-700 leading-tight group-hover:translate-x-2 transition-transform relative z-10">{item.d}</p>
+                         <item.icon className={`absolute -bottom-4 -right-4 opacity-5 group-hover:opacity-10 transition-opacity ${item.c}`} size={80} />
                       </div>
                    ))}
                </div>
-            </div>
+             </div>
+
+             {/* Vaikuntha History */}
+             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <Card className="p-10 bg-white border-none shadow-premium-xl rounded-[3.5rem] relative overflow-hidden group">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+                            <CheckCircle2 size={24} />
+                         </div>
+                         <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase italic">Attendance History</h3>
+                      </div>
+                   </div>
+                   <div className="space-y-4">
+                      {sadhanaData.attendance?.length > 0 ? sadhanaData.attendance.map((att, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-green-100 transition-all">
+                           <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{att.session}</span>
+                              <span className="text-sm font-bold text-gray-900">{new Date(att.createdAt?.toDate?.() || att.createdAt).toLocaleDateString()}</span>
+                           </div>
+                           <div className="text-right">
+                              <span className="text-[10px] font-black text-green-600 bg-green-100/50 px-3 py-1 rounded-full uppercase tracking-tighter">Verified</span>
+                           </div>
+                        </div>
+                      )) : (
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest text-center py-6">No records found</p>
+                      )}
+                   </div>
+                </Card>
+
+                <Card className="p-10 bg-white border-none shadow-premium-xl rounded-[3.5rem] relative overflow-hidden group">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 bg-saffron/10 rounded-2xl flex items-center justify-center text-saffron">
+                            <Zap size={24} />
+                         </div>
+                         <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase italic">Prasadam Log</h3>
+                      </div>
+                   </div>
+                   <div className="space-y-4">
+                      {sadhanaData.prasadam?.length > 0 ? sadhanaData.prasadam.map((p, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-saffron/10 transition-all">
+                           <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{p.eventTitle}</span>
+                              <span className="text-sm font-bold text-gray-900">{new Date(p.timestamp?.toDate?.() || p.timestamp).toLocaleDateString()}</span>
+                           </div>
+                           <div className="text-right">
+                              <span className="text-[10px] font-black text-saffron bg-saffron/10 px-3 py-1 rounded-full uppercase tracking-tighter">Received</span>
+                           </div>
+                        </div>
+                      )) : (
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest text-center py-6">No records found</p>
+                      )}
+                   </div>
+                </Card>
+             </div>
           </div>
         </div>
       </motion.div>

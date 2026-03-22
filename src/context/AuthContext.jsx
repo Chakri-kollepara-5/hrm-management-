@@ -37,8 +37,14 @@ export const AuthProvider = ({ children }) => {
 
   const loginEmail = async (email, password) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error) {
+      console.error("Firebase Login Error Details:", {
+        code: error.code,
+        message: error.message,
+        customData: error.customData,
+        email: email ? email.substring(0, 3) + '...' : 'none'
+      });
       throw error;
     }
   };
@@ -96,6 +102,7 @@ export const AuthProvider = ({ children }) => {
     const userRef = doc(db, 'users', auth.currentUser.uid);
     try {
       const finalName = providedName || auth.currentUser.displayName || 'Devotee';
+      const qrToken = crypto.randomUUID();
       
       const profileData = {
         uid: auth.currentUser.uid,
@@ -103,12 +110,13 @@ export const AuthProvider = ({ children }) => {
         name: finalName,
         photo: getSafeProfileImage(auth.currentUser.photoURL, auth.currentUser.displayName),
         role: assignedRole, 
+        qrToken,
         createdAt: serverTimestamp()
       };
       await setDoc(userRef, profileData);
       
       if (providedName && !auth.currentUser.displayName) {
-        await updateProfile(auth.currentUser, { displayName: providedName });
+        await updateProfile(auth.currentUser, { displayName: finalName });
       }
       
       const finalUser = { ...auth.currentUser, ...profileData };
@@ -135,12 +143,21 @@ export const AuthProvider = ({ children }) => {
         try {
           const userDoc = await getDoc(doc(db, 'users', authUser.uid));
           if (userDoc.exists()) {
-            let liveRole = userDoc.data().role;
+            const userData = userDoc.data();
+            let liveRole = userData.role;
+            
+            // Auto-generate qrToken if missing
+            if (!userData.qrToken) {
+              const newToken = crypto.randomUUID();
+              await setDoc(doc(db, 'users', authUser.uid), { qrToken: newToken }, { merge: true });
+              userData.qrToken = newToken;
+            }
+
             if (authUser.uid === 'wRbvUaFiBOYeXEEtF8OuXnzGWXs2' && liveRole !== 'admin') {
                await setDoc(doc(db, 'users', authUser.uid), { role: 'admin' }, { merge: true });
                liveRole = 'admin';
             }
-            const finalUser = { ...authUser, ...userDoc.data(), role: liveRole, requiresRole: false };
+            const finalUser = { ...authUser, ...userData, role: liveRole, requiresRole: false };
             setUser(finalUser);
             localStorage.setItem('fast_load_cache', JSON.stringify(finalUser));
           } else {

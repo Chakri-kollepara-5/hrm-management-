@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, TrendingUp, Calendar, Home, CheckSquare } from 'lucide-react'
+import { LayoutDashboard, TrendingUp, Calendar, Home, CheckSquare, Heart, QrCode } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth';
 
 const BottomNav = ({ activeTab, setActiveTab }) => {
@@ -10,8 +10,9 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
     { id: 'admin', icon: <LayoutDashboard size={20} />, label: 'Admin', roles: ['admin', 'folks_head'] },
     { id: 'dashboard', icon: <TrendingUp size={20} />, label: 'Sadhana', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'events', icon: <Calendar size={20} />, label: 'Events', roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'attendance', icon: <QrCode size={20} />, label: 'Verify', roles: ['admin', 'folks_head'] },
+    { id: 'seva', icon: <Heart size={20} />, label: 'Seva', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home size={20} />, label: 'Stay', roles: ['admin', 'folks_head', 'devotee'] },
-    { id: 'attendance', icon: <CheckSquare size={20} />, label: 'Check-in', roles: ['admin', 'folks_head'] },
   ]
 
   const navItems = allItems.filter(item => item.roles.includes(user?.role));

@@ -34,7 +34,7 @@ const Navbar = ({ setActiveTab }) => {
           <img 
             src="/logo.png" 
             alt="Folkvizag Logo" 
-            className="h-8 sm:h-12 w-auto object-contain hover:scale-[1.02] transition-transform cursor-pointer drop-shadow-md" 
+            className="h-8 sm:h-12 w-auto object-contain hover:scale-[1.02] transition-transform cursor-pointer drop-shadow-md brightness-0 opacity-90" 
           />
         </div>
       </div>
