@@ -13,6 +13,7 @@ import SevaDashboard from './pages/SevaDashboard'
 import { useAuth } from './hooks/useAuth'
 import UserRoleGuard from './components/auth/UserRoleGuard'
 import ScanningOverlay from './components/qr/ScanningOverlay'
+import InstallPrompt from './components/layout/InstallPrompt'
 
 function App() {
   const { user, loading } = useAuth()
@@ -54,9 +55,19 @@ function App() {
 
   if (!user) {
     if (showLanding) {
-      return <Landing onLoginClick={() => setShowLanding(false)} />
+      return (
+        <>
+          <InstallPrompt />
+          <Landing onLoginClick={() => setShowLanding(false)} />
+        </>
+      )
     }
-    return <Login />
+    return (
+      <>
+        <InstallPrompt />
+        <Login />
+      </>
+    )
   }
 
   if (user.requiresRole) {
@@ -106,6 +117,7 @@ function App() {
 
   return (
     <MainLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+      <InstallPrompt />
       {renderContent()}
       <ScanningOverlay 
         isOpen={globalScanner.isOpen}

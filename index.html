@@ -20,9 +20,24 @@
     <meta property="twitter:description" content="A comprehensive platform for devotee management, sadhana tracking, and community engagement.">
     <meta property="twitter:image" content="/logo.png">
 
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#FF9933" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered', reg))
+            .catch(err => console.error('Service Worker registration failed', err));
+        });
+      }
+    </script>
 
   </head>
   <body class="bg-[#FFF8E7] text-gray-800 antialiased font-['Inter']">
