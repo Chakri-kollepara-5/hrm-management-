@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, Calendar, Users, Info, Clock, CheckCircle2, Loader2, Send } from 'lucide-react'
+import { Home, Calendar, Users, Info, Clock, CheckCircle2, Loader2, Send, Camera, RefreshCw, StopCircle, Zap, X } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useFirestore } from '../hooks/useFirestore'
 import { useAuth } from '../hooks/useAuth'
 import { db } from '../lib/firebase'
 import { collection, addDoc, serverTimestamp, where, query, orderBy, updateDoc, doc } from 'firebase/firestore'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const Accommodation = () => {
   const { user } = useAuth();
@@ -21,6 +22,67 @@ const Accommodation = () => {
   }, [user?.uid, user?.role]);
 
   const { data: requests, loading } = useFirestore('accommodation_requests', requestsQuery);
+
+  // Scanner State
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [cameras, setCameras] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const [html5QrCode, setHtml5QrCode] = useState(null);
+
+  const toggleScanner = async () => {
+    if (!isScannerOpen) {
+      setIsScannerOpen(true);
+      setScanResult(null);
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          setCameras(devices);
+          setSelectedCameraId(devices[0].id);
+        }
+      } catch (err) {
+        console.error("Error getting cameras", err);
+      }
+    } else {
+      await stopScanning();
+      setIsScannerOpen(false);
+    }
+  };
+
+  const startScanning = async () => {
+    if (isScanning) return;
+    try {
+      const qrCode = new Html5Qrcode("reader");
+      setHtml5QrCode(qrCode);
+      await qrCode.start(
+        selectedCameraId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          setScanResult(decodedText);
+          qrCode.stop().then(() => {
+            setIsScanning(false);
+          });
+        },
+        () => {}
+      );
+      setIsScanning(true);
+    } catch (err) {
+      console.error("Start scanning error", err);
+    }
+  };
+
+  const stopScanning = async () => {
+    if (html5QrCode && (isScanning || html5QrCode.isScanning)) {
+      try {
+        await html5QrCode.stop();
+        setIsScanning(false);
+        setHtml5QrCode(null);
+      } catch (err) {
+        console.error("Stop scanning error", err);
+      }
+    }
+  };
 
   const [formData, setFormData] = useState({
     type: 'Individual Guest House',
@@ -277,6 +339,134 @@ const Accommodation = () => {
           </section>
         </div>
       </div>
+
+      {user?.role !== 'devotee' && (
+        <Card className="p-8 border-none shadow-premium bg-white overflow-hidden relative">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+              <Zap className="text-saffron" size={24} />
+              Quick Check-in Scanner
+            </h2>
+            <Button 
+              onClick={toggleScanner}
+              variant={isScannerOpen ? "secondary" : "primary"}
+              className={`px-6 font-bold rounded-xl flex items-center gap-2 ${isScannerOpen ? 'bg-gray-100 text-gray-500 border-none' : 'bg-saffron text-white border-none'}`}
+            >
+              {isScannerOpen ? <X size={18} /> : <Camera size={18} />}
+              {isScannerOpen ? 'Close Scanner' : 'Open Scanner'}
+            </Button>
+          </div>
+
+          <AnimatePresence>
+            {isScannerOpen && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-4">Select Scanning Device</label>
+                      <div className="grid grid-cols-1 gap-3">
+                        {cameras.length > 0 ? cameras.map((camera) => (
+                          <button
+                            key={camera.id}
+                            onClick={() => setSelectedCameraId(camera.id)}
+                            className={`p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 ${
+                              selectedCameraId === camera.id 
+                                ? 'border-saffron bg-saffron/5 shadow-md shadow-saffron/10' 
+                                : 'border-gray-100 hover:border-saffron/20 bg-gray-50/50'
+                            }`}
+                          >
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedCameraId === camera.id ? 'bg-saffron text-white' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                              <Camera size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-bold text-sm truncate ${selectedCameraId === camera.id ? 'text-saffron-dark' : 'text-gray-700'}`}>
+                                {camera.label || `Camera ${cameras.indexOf(camera) + 1}`}
+                              </p>
+                              <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-widest">{camera.id.slice(0, 12)}...</p>
+                            </div>
+                            {selectedCameraId === camera.id && (
+                              <div className="w-2 h-2 rounded-full bg-saffron animate-pulse" />
+                            )}
+                          </button>
+                        )) : (
+                          <div className="p-4 bg-red-50 text-red-500 rounded-xl text-xs font-bold flex items-center gap-2">
+                             <Info size={14} /> No cameras detected. Please check permissions.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      {!isScanning ? (
+                        <Button 
+                          onClick={startScanning}
+                          disabled={!selectedCameraId}
+                          className="flex-1 py-4 bg-gradient-to-r from-saffron to-gold text-white border-none font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-saffron/20"
+                        >
+                          Start Scanning
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={stopScanning}
+                          className="flex-1 py-4 bg-red-500 text-white border-none font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+                        >
+                          <StopCircle size={18} /> Stop Scanning
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        onClick={() => window.location.reload()}
+                        className="p-4 bg-gray-100 text-gray-500 border-none rounded-2xl hover:bg-gray-200 transition-all"
+                      >
+                         <RefreshCw size={20} />
+                      </Button>
+                    </div>
+
+                    {scanResult && (
+                      <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="p-6 bg-green-50 border border-green-100 rounded-[2rem] flex items-center gap-4"
+                      >
+                         <div className="w-12 h-12 bg-green-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-green-100">
+                           <CheckCircle2 size={24} />
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Scan Successful</p>
+                            <p className="text-sm font-bold text-green-900 font-mono">{scanResult}</p>
+                         </div>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <div className="aspect-square rounded-[2.5rem] bg-gray-900 overflow-hidden border-8 border-gray-50 shadow-inner relative group">
+                      <div id="reader" className="w-full h-full object-cover" />
+                      {!isScanning && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20 group-hover:text-white/40 transition-colors">
+                           <Zap size={64} className="mb-4" />
+                           <p className="text-[10px] font-black uppercase tracking-[0.3em]">Camera Standby</p>
+                        </div>
+                      )}
+                      {isScanning && (
+                        <div className="absolute inset-0 pointer-events-none">
+                           <div className="absolute inset-8 border-2 border-saffron/50 rounded-3xl" />
+                           <div className="absolute top-1/2 left-8 right-8 h-0.5 bg-saffron/30 animate-scan" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Card>
+      )}
 
       <Card className="p-6 sm:p-10 border-none shadow-premium bg-gradient-to-r from-white to-cream/30 relative overflow-hidden">
         <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] opacity-10 pointer-events-none" />

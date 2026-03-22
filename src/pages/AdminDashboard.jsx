@@ -256,7 +256,10 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
                           </span>
                         </td>
                         <td className="py-4 text-right">
-                          <Button className="py-1 px-4 text-[10px] bg-saffron/10 text-saffron-dark font-bold rounded-lg border-none hover:bg-saffron hover:text-white transition-all">
+                          <Button 
+                            onClick={() => setActiveTab('accommodation')}
+                            className="py-1 px-4 text-[10px] bg-saffron/10 text-saffron-dark font-bold rounded-lg border-none hover:bg-saffron hover:text-white transition-all"
+                          >
                             Manage
                           </Button>
                         </td>
