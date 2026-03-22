@@ -20,33 +20,24 @@ import {
   Home,
   QrCode as QrIcon
 } from 'lucide-react'
-import QRScanner from '../components/qr/QRScanner'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import Card from '../components/ui/Card'
 import { useFirestore } from '../hooks/useFirestore'
 import { useAuth } from '../hooks/useAuth'
 
-const Attendance = ({ autoScan, onScanStarted }) => {
+const Attendance = ({ onOpenScanner }) => {
   const { user } = useAuth();
   const attendanceQuery = React.useMemo(() => [], []);
   const { data: checkins, loading } = useFirestore('attendance', attendanceQuery);
   const [searchTerm, setSearchTerm] = useState('');
+  // Local verification only for Manual Token Input
   const [tokenInput, setTokenInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState(null);
   
-  const [showScanner, setShowScanner] = useState(false);
-  const [scanMode, setScanMode] = useState('attendance'); // 'attendance' | 'prasadam'
+  const [scanMode, setScanMode] = useState('attendance'); 
   const [selectedEventId, setSelectedEventId] = useState('');
-  
-  // Direct Scan Logic
-  useEffect(() => {
-    if (autoScan) {
-      setShowScanner(true);
-      if (onScanStarted) onScanStarted();
-    }
-  }, [autoScan, onScanStarted]);
   
   const { data: events } = useFirestore('events');
 
@@ -60,97 +51,6 @@ const Attendance = ({ autoScan, onScanStarted }) => {
     (!selectedEventId || c.eventId === selectedEventId)
   );
 
-  const handleScan = async (qrToken) => {
-    if (!selectedEventId) {
-      setVerifyResult({ success: false, message: 'Please select an event first!' });
-      return;
-    }
-    
-    setVerifying(true);
-    setVerifyResult(null);
-    try {
-      // 1. Find user by qrToken
-      const userQ = query(collection(db, 'users'), where('qrToken', '==', qrToken));
-      const userSnap = await getDocs(userQ);
-      
-      if (userSnap.empty) throw new Error('Invalid QR Code / Devotee not found');
-      
-      const devotee = { id: userSnap.docs[0].id, ...userSnap.docs[0].data() };
-      const event = events.find(e => e.id === selectedEventId);
-      
-      if (scanMode === 'attendance') {
-        // Attendance Logic
-        const checkinQ = query(collection(db, 'attendance'), 
-          where('userId', '==', devotee.id),
-          where('eventId', '==', selectedEventId)
-        );
-        const checkinSnap = await getDocs(checkinQ);
-        
-        if (!checkinSnap.empty) throw new Error(`${devotee.name} already checked in!`);
-        
-        // Check for Accommodation
-        let accInfo = null;
-        try {
-          const accQ = query(collection(db, 'accommodation_requests'), 
-            where('userId', '==', devotee.id),
-            where('status', '==', 'Approved')
-          );
-          const accSnap = await getDocs(accQ);
-          if (!accSnap.empty) {
-            accInfo = accSnap.docs[0].data();
-          }
-        } catch (e) { console.error("Acc fetch error", e); }
-
-        setVerifyResult({ 
-          success: true, 
-          message: `Welcome ${devotee.name}! Attendance marked.`,
-          accommodation: accInfo
-        });
-      } else {
-        // Prasadam Logic
-        const prasadamQ = query(collection(db, 'prasadam_logs'), 
-          where('userId', '==', devotee.id),
-          where('eventId', '==', selectedEventId)
-        );
-        const prasadamSnap = await getDocs(prasadamQ);
-        
-        if (!prasadamSnap.empty) throw new Error(`${devotee.name} already received prasadam!`);
-        
-        await addDoc(collection(db, 'prasadam_logs'), {
-          userId: devotee.id,
-          name: devotee.name,
-          eventId: selectedEventId,
-          eventTitle: event?.title || 'Unknown Event',
-          received: true,
-          timestamp: serverTimestamp()
-        });
-        // Check for Accommodation
-        let accInfo = null;
-        try {
-          const accQ = query(collection(db, 'accommodation_requests'), 
-            where('userId', '==', devotee.id),
-            where('status', '==', 'Approved')
-          );
-          const accSnap = await getDocs(accQ);
-          if (!accSnap.empty) {
-            accInfo = accSnap.docs[0].data();
-          }
-        } catch (e) { console.error("Acc fetch error", e); }
-
-        setVerifyResult({ 
-          success: true, 
-          message: `Mahaprasadam served to ${devotee.name}!`,
-          accommodation: accInfo 
-        });
-      }
-    } catch (error) {
-      console.error("Scan error:", error);
-      setVerifyResult({ success: false, message: error.message });
-    } finally {
-      setVerifying(false);
-      setShowScanner(false);
-    }
-  };
 
   const handleVerifyToken = async (e) => {
     e.preventDefault();
@@ -454,7 +354,7 @@ const Attendance = ({ autoScan, onScanStarted }) => {
               <div className="space-y-4">
                 <button 
                   disabled={verifying}
-                  onClick={() => setShowScanner(true)}
+                  onClick={() => onOpenScanner(scanMode)}
                   className="w-full py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-premium-xl flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
                 >
                   <QrIcon size={20} />
@@ -610,15 +510,6 @@ const Attendance = ({ autoScan, onScanStarted }) => {
           </Card>
         </div>
       </div>
-      <AnimatePresence>
-        {showScanner && (
-          <QRScanner 
-            mode={scanMode}
-            onScan={handleScan}
-            onClose={() => setShowScanner(false)}
-          />
-        )}
-      </AnimatePresence>
     </motion.div>
   )
 }

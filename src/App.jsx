@@ -12,6 +12,7 @@ import Devotees from './pages/Devotees'
 import SevaDashboard from './pages/SevaDashboard'
 import { useAuth } from './hooks/useAuth'
 import UserRoleGuard from './components/auth/UserRoleGuard'
+import ScanningOverlay from './components/qr/ScanningOverlay'
 
 function App() {
   const { user, loading } = useAuth()
@@ -22,7 +23,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(() => {
     return !localStorage.getItem('fast_load_cache');
   });
-  const [attendanceOptions, setAttendanceOptions] = useState({ autoScan: false });
+  const [globalScanner, setGlobalScanner] = useState({ isOpen: false, mode: 'attendance' });
 
   useEffect(() => {
     if (user) {
@@ -76,8 +77,7 @@ function App() {
         return (
           <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
             <Attendance 
-              autoScan={attendanceOptions.autoScan} 
-              onScanStarted={() => setAttendanceOptions({ autoScan: false })} 
+              onOpenScanner={(mode) => setGlobalScanner({ isOpen: true, mode })} 
             />
           </UserRoleGuard>
         )
@@ -88,7 +88,7 @@ function App() {
           <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
             <AdminDashboard 
               setActiveTab={setActiveTab} 
-              setAttendanceOptions={setAttendanceOptions}
+              onOpenScanner={(mode) => setGlobalScanner({ isOpen: true, mode })}
             />
           </UserRoleGuard>
         )
@@ -97,7 +97,7 @@ function App() {
           <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
             <AdminDashboard 
               setActiveTab={setActiveTab} 
-              setAttendanceOptions={setAttendanceOptions}
+              onOpenScanner={(mode) => setGlobalScanner({ isOpen: true, mode })}
             />
           </UserRoleGuard>
         )
@@ -107,6 +107,11 @@ function App() {
   return (
     <MainLayout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+      <ScanningOverlay 
+        isOpen={globalScanner.isOpen}
+        onClose={() => setGlobalScanner({ ...globalScanner, isOpen: false })}
+        initialMode={globalScanner.mode}
+      />
     </MainLayout>
   )
 }
