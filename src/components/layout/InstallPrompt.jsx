@@ -51,7 +51,7 @@ const InstallPrompt = () => {
         >
           <div className="bg-white/90 backdrop-blur-xl border border-white/40 rounded-[2.5rem] p-1.5 pr-5 shadow-premium-xl flex items-center gap-4">
              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 overflow-hidden shrink-0">
-                <img src="/logo.png" alt="logo" className="w-9 h-9 object-contain" />
+                <img src="/logo_pwa.png" alt="logo" className="w-9 h-9 object-contain" />
              </div>
              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
