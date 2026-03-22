@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
@@ -27,7 +27,7 @@ import Card from '../components/ui/Card'
 import { useFirestore } from '../hooks/useFirestore'
 import { useAuth } from '../hooks/useAuth'
 
-const Attendance = () => {
+const Attendance = ({ autoScan, onScanStarted }) => {
   const { user } = useAuth();
   const attendanceQuery = React.useMemo(() => [], []);
   const { data: checkins, loading } = useFirestore('attendance', attendanceQuery);
@@ -39,6 +39,14 @@ const Attendance = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [scanMode, setScanMode] = useState('attendance'); // 'attendance' | 'prasadam'
   const [selectedEventId, setSelectedEventId] = useState('');
+  
+  // Direct Scan Logic
+  useEffect(() => {
+    if (autoScan) {
+      setShowScanner(true);
+      if (onScanStarted) onScanStarted();
+    }
+  }, [autoScan, onScanStarted]);
   
   const { data: events } = useFirestore('events');
 

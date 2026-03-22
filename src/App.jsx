@@ -22,6 +22,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(() => {
     return !localStorage.getItem('fast_load_cache');
   });
+  const [attendanceOptions, setAttendanceOptions] = useState({ autoScan: false });
 
   useEffect(() => {
     if (user) {
@@ -72,13 +73,34 @@ function App() {
       case 'accommodation': 
         return <Accommodation />
       case 'attendance': 
-        return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><Attendance /></UserRoleGuard>
+        return (
+          <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
+            <Attendance 
+              autoScan={attendanceOptions.autoScan} 
+              onScanStarted={() => setAttendanceOptions({ autoScan: false })} 
+            />
+          </UserRoleGuard>
+        )
       case 'seva':
         return <SevaDashboard />
       case 'admin':
-        return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><AdminDashboard setActiveTab={setActiveTab} /></UserRoleGuard>
+        return (
+          <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
+            <AdminDashboard 
+              setActiveTab={setActiveTab} 
+              setAttendanceOptions={setAttendanceOptions}
+            />
+          </UserRoleGuard>
+        )
       default: 
-        return <UserRoleGuard allowedRoles={['admin', 'folks_head']}><AdminDashboard setActiveTab={setActiveTab} /></UserRoleGuard>
+        return (
+          <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
+            <AdminDashboard 
+              setActiveTab={setActiveTab} 
+              setAttendanceOptions={setAttendanceOptions}
+            />
+          </UserRoleGuard>
+        )
     }
   }
 

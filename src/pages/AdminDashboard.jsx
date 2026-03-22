@@ -13,7 +13,7 @@ import { getSafeProfileImage } from '../lib/imageUtils'
 import { functions } from '../lib/firebase'
 import { httpsCallable } from 'firebase/functions'
 
-const AdminDashboard = ({ setActiveTab }) => {
+const AdminDashboard = ({ setActiveTab, setAttendanceOptions }) => {
   const { user } = useAuth();
   const today = new Date().toISOString().split('T')[0];
   
@@ -151,7 +151,12 @@ const AdminDashboard = ({ setActiveTab }) => {
               key={i}
               whileHover={{ y: -5, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab(action.tab)}
+              onClick={() => {
+                if (action.tab === 'attendance') {
+                  setAttendanceOptions({ autoScan: true });
+                }
+                setActiveTab(action.tab);
+              }}
               className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl font-bold text-xs sm:text-sm shadow-lg transition-all ${action.color}`}
             >
               <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
