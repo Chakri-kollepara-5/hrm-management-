@@ -20,12 +20,28 @@ function App() {
   const { user, loading } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSplash, setShowSplash] = useState(() => {
-    return !localStorage.getItem('fast_load_cache');
+    try {
+      return !localStorage.getItem('fast_load_cache');
+    } catch (e) {
+      return true;
+    }
   });
   const [showLanding, setShowLanding] = useState(() => {
-    return !localStorage.getItem('fast_load_cache');
+    try {
+      return !localStorage.getItem('fast_load_cache');
+    } catch (e) {
+      return true;
+    }
   });
   const [globalScanner, setGlobalScanner] = useState({ isOpen: false, mode: 'attendance' });
+
+  // Rescue timer to ensure UI always appears even if Splash hangs
+  useEffect(() => {
+    if (showSplash) {
+      const timer = setTimeout(() => setShowSplash(false), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   useEffect(() => {
     if (user) {

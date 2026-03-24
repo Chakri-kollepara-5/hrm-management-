@@ -44,10 +44,9 @@ const ScanningOverlay = ({ isOpen, onClose, initialMode = 'attendance' }) => {
       const devotee = { id: userSnap.docs[0].id, ...userSnap.docs[0].data() };
       
       // Auto-detect Active Event (using the first available event if none selected)
-      // In global mode, we'll try to find the most relevant active event
-      const event = events.find(e => e.status === 'active') || events[0];
+      const event = (events || []).find(e => e.status === 'active') || (events && events[0]);
       
-      if (!event) throw new Error('No active events found to record scanning.');
+      if (!event) throw new Error('No active events found. Please create an event in the dashboard first.');
 
       if (scanMode === 'attendance') {
         const checkinQ = query(collection(db, 'attendance'), 
