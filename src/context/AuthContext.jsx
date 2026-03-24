@@ -20,8 +20,13 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const cached = localStorage.getItem('fast_load_cache');
-    return cached ? JSON.parse(cached) : null;
+    try {
+      const cached = localStorage.getItem('fast_load_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      console.error("Cache parsing error:", e);
+      return null;
+    }
   });
   const [loading, setLoading] = useState(() => !localStorage.getItem('fast_load_cache'));
   const [profileLoaded, setProfileLoaded] = useState(() => !!localStorage.getItem('fast_load_cache'));
@@ -102,7 +107,7 @@ export const AuthProvider = ({ children }) => {
     const userRef = doc(db, 'users', auth.currentUser.uid);
     try {
       const finalName = providedName || auth.currentUser.displayName || 'Devotee';
-      const qrToken = crypto.randomUUID();
+      const qrToken = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
       
       const profileData = {
         uid: auth.currentUser.uid,
@@ -148,7 +153,7 @@ export const AuthProvider = ({ children }) => {
             
             // Auto-generate qrToken if missing
             if (!userData.qrToken) {
-              const newToken = crypto.randomUUID();
+              const newToken = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
               await setDoc(doc(db, 'users', authUser.uid), { qrToken: newToken }, { merge: true });
               userData.qrToken = newToken;
             }
