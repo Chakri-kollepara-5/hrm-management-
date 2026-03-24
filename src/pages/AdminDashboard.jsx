@@ -84,14 +84,6 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
     { id: 'aarti_m', label: 'Morning Aarti', done: sadhanaLogs[0]?.tasks?.aarti_m || false },
   ];
 
-  if (usersLoading || eventsLoading || requestsLoading || sadhanaLoading || sevasLoading) {
-    return (
-      <div className="h-[70vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-saffron" size={48} />
-      </div>
-    );
-  }
-
   const [backendStatus, setBackendStatus] = useState('checking');
 
   useEffect(() => {
@@ -107,6 +99,14 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
     };
     checkBackend();
   }, []);
+
+  if (usersLoading || eventsLoading || requestsLoading || sadhanaLoading || sevasLoading) {
+    return (
+      <div className="h-[70vh] flex items-center justify-center">
+        <Loader2 className="animate-spin text-saffron" size={48} />
+      </div>
+    );
+  }
 
   return (
     <motion.div

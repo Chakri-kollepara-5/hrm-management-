@@ -5,7 +5,12 @@ import {
   Clock, 
   MapPin, 
   Users, 
-  QrCode as QrIcon
+  QrCode as QrIcon,
+  Ticket,
+  CheckCircle2,
+  XCircle,
+  Info,
+  Home
 } from 'lucide-react'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
@@ -468,7 +473,7 @@ const Attendance = ({ onOpenScanner }) => {
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">{reg.eventTitle}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xl font-mono font-black tracking-tighter">{reg.token}</span>
-                      <QrCode size={20} className="text-white/40" />
+                      <QrIcon size={20} className="text-white/40" />
                     </div>
                   </div>
                 )) : (
