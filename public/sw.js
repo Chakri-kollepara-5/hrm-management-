@@ -45,11 +45,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For other assets, use Stale-While-Revalidate
+  // For other assets, use Stale-While-Revalidate (GET only)
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200) {
+        // Only cache successful GET requests
+        if (event.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
           const clonedResponse = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
         }
