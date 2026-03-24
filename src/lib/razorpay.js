@@ -1,5 +1,7 @@
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { callApi } from './api';
+import { CONFIG } from '../config';
 
 export const initializeRazorpay = () => {
   return new Promise((resolve) => {
@@ -11,59 +13,69 @@ export const initializeRazorpay = () => {
   });
 };
 
-export const handlePayment = async (user, amount, sevaType) => {
-  // In a real app, you would call your Cloud Function to create an order first
-  // const response = await fetch('/api/create-order', { method: 'POST', body: JSON.stringify({ amount }) });
-  // const order = await response.json();
-  
-  console.log(`Initializing Razorpay payment for ${user.displayName}: ₹${amount} for ${sevaType}`);
-  
-  // Mocking the Razorpay success for now since we don't have a backend order ID
-  const options = {
-    key: 'rzp_test_YOUR_KEY_HERE', // Placeholder
-    amount: amount * 100,
-    currency: 'INR',
-    name: 'Gauranga Hub',
-    description: `Donation for ${sevaType}`,
-    image: 'https://cdn-icons-png.flaticon.com/512/3354/3354519.png',
-    handler: async function (response) {
-      // On success, save to Firestore
-      try {
-        await addDoc(collection(db, 'payments'), {
-          userId: user.uid,
-          userName: user.name || user.displayName,
-          amount: amount,
-          sevaType: sevaType,
-          razorpayPaymentId: response.razorpay_payment_id,
-          status: 'SUCCESS',
-          createdAt: serverTimestamp()
-        });
-        alert(`Payment Successful! ID: ${response.razorpay_payment_id}`);
-      } catch (error) {
-        console.error("Payment logging error:", error);
-      }
-    },
-    prefill: {
-      name: user.displayName,
-      email: user.email,
-    },
-    theme: {
-      color: '#FF9933',
-    },
-  };
-
-  // Simulate Razorpay trigger if key is valid, or just mock success in DEV
-  alert(`[MOCK] Redirecting to Razorpay for ₹${amount}...`);
-  // For demonstration, we'll auto-trigger success in this mock
-  setTimeout(async () => {
-    await addDoc(collection(db, 'payments'), {
-        userId: user.uid,
-        userName: user?.name || user?.displayName || 'Devotee',
-        amount: amount,
-        sevaType: sevaType,
-        status: 'SUCCESS',
-        createdAt: serverTimestamp()
+export const handlePayment = async (user, amount, sevaType, eventId = null) => {
+  try {
+    console.log(`Initializing Razorpay payment for ${user.displayName}: ₹${amount} for ${sevaType}`);
+    
+    // 1. Create Order on Backend
+    const order = await callApi('createOrder', { 
+      amount: parseFloat(amount), 
+      eventId 
     });
-    alert("Donation successful! Thank you for your seva.");
-  }, 1000);
+
+    if (!order || !order.id) {
+      throw new Error("Failed to create Razorpay order on backend.");
+    }
+
+    // 2. Initialize Razorpay UI
+    const options = {
+      key: CONFIG.RAZORPAY_KEY,
+      amount: order.amount, // Result from backend in paise
+      currency: order.currency,
+      name: 'Folk Vizag',
+      description: `Donation for ${sevaType}`,
+      order_id: order.id,
+      image: 'https://cdn-icons-png.flaticon.com/512/3354/3354519.png',
+      handler: async function (response) {
+        // This is called when payment is successful on the client
+        // The backend webhook will ALSO receive this and update the state securely
+        try {
+          // Add a client-side log for immediate UX feedback
+          await addDoc(collection(db, 'payments'), {
+            userId: user.uid,
+            userName: user.name || user.displayName,
+            amount: amount,
+            sevaType: sevaType,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpayOrderId: response.razorpay_order_id,
+            status: 'PROCESSING',
+            createdAt: serverTimestamp()
+          });
+          alert(`Payment Successful! ID: ${response.razorpay_payment_id}`);
+        } catch (error) {
+          console.error("Payment logging error:", error);
+        }
+      },
+      prefill: {
+        name: user.name || user.displayName,
+        email: user.email,
+        contact: user.mobile || ''
+      },
+      theme: {
+        color: '#FF9933',
+      },
+      modal: {
+        ondismiss: function() {
+          console.log('Checkout modal closed');
+        }
+      }
+    };
+
+    const rzp1 = new window.Razorpay(options);
+    rzp1.open();
+
+  } catch (error) {
+    console.error("Payment initialization error:", error);
+    alert(`Could not start payment: ${error.message}`);
+  }
 };

@@ -12,6 +12,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore'
 import { getSafeProfileImage } from '../lib/imageUtils'
 import { functions } from '../lib/firebase'
 import { httpsCallable } from 'firebase/functions'
+import { callApi } from '../lib/api'
 
 const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
   const { user } = useAuth();
@@ -95,6 +96,22 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
     );
   }
 
+  const [backendStatus, setBackendStatus] = useState('checking');
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const { message } = await callApi('ping');
+        if (message === 'pong') setBackendStatus('online');
+        else setBackendStatus('error');
+      } catch (err) {
+        console.error("Backend ping failed:", err);
+        setBackendStatus('offline');
+      }
+    };
+    checkBackend();
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -107,9 +124,19 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
             <h1 className="text-3xl font-bold font-poppins text-saffron-dark">Haribol, {user?.name || user?.displayName?.split(' ')[0] || 'Devotee'} 👋</h1>
             <Sparkles className="text-gold animate-pulse" size={24} />
           </div>
-          <div className="flex items-center gap-2 text-gray-500 italic">
-            <Quote size={14} className="text-saffron opacity-50" />
-            <p className="text-sm">"The soul is the same in all, but the quality of devotion shines uniquely."</p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-gray-500 italic">
+              <Quote size={14} className="text-saffron opacity-50" />
+              <p className="text-sm">"The soul is the same in all, but the quality of devotion shines uniquely."</p>
+            </div>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+              backendStatus === 'online' ? 'bg-green-100 text-green-600' : 
+              backendStatus === 'offline' ? 'bg-red-100 text-red-600' : 
+              'bg-gray-100 text-gray-400'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-green-500 animate-pulse' : 'bg-current'}`} />
+              Backend: {backendStatus}
+            </div>
           </div>
         </div>
         <div className="flex gap-4">
