@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 import { getAnalytics } from "firebase/analytics";
+import { getStorage } from "firebase/storage";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -26,6 +27,7 @@ export const db = initializeFirestore(app, {
 });
 
 export const functions = getFunctions(app);
+export const storage = getStorage(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 export default app;

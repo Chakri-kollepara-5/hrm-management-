@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, TrendingUp, Calendar, Home, CheckSquare, Heart, QrCode } from 'lucide-react'
+import { LayoutDashboard, TrendingUp, Calendar, Home, CheckSquare, Heart, QrCode, User } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth';
 
 const BottomNav = ({ activeTab, setActiveTab }) => {
@@ -12,6 +12,7 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
     { id: 'events', icon: <Calendar size={20} />, label: 'Events', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'attendance', icon: <QrCode size={20} />, label: 'Verify', roles: ['admin', 'folks_head'] },
     { id: 'seva', icon: <Heart size={20} />, label: 'Seva', roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'profile', icon: <User size={20} />, label: 'Profile', roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home size={20} />, label: 'Stay', roles: ['admin', 'folks_head', 'devotee'] },
   ]
 

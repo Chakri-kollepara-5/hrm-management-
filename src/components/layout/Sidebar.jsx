@@ -50,6 +50,7 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
     { id: 'events', icon: <Calendar />, label: "Event Management", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'seva', icon: <Heart />, label: "Seva Management", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'dashboard', icon: <TrendingUp />, label: "Sadhana Tracker", roles: ['admin', 'folks_head', 'devotee'] },
+    { id: 'profile', icon: <User />, label: "My Profile", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'accommodation', icon: <Home />, label: "Accommodation", roles: ['admin', 'folks_head', 'devotee'] },
     { id: 'attendance', icon: <CheckSquare />, label: "Attendance", roles: ['admin', 'folks_head'] },
   ]

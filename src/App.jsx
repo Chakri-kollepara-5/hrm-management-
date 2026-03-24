@@ -10,6 +10,7 @@ import Landing from './pages/Landing'
 import Splash from './components/Splash'
 import Devotees from './pages/Devotees'
 import SevaDashboard from './pages/SevaDashboard'
+import Profile from './pages/Profile'
 import { useAuth } from './hooks/useAuth'
 import UserRoleGuard from './components/auth/UserRoleGuard'
 import ScanningOverlay from './components/qr/ScanningOverlay'
@@ -94,6 +95,8 @@ function App() {
         )
       case 'seva':
         return <SevaDashboard />
+      case 'profile':
+        return <Profile />
       case 'admin':
         return (
           <UserRoleGuard allowedRoles={['admin', 'folks_head']}>
