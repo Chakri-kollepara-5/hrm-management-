@@ -118,15 +118,20 @@ export const AuthProvider = ({ children }) => {
         qrToken,
         createdAt: serverTimestamp()
       };
-      await setDoc(userRef, profileData);
+
+      // Optimistic update: Update local state immediately
+      const optimisticUser = { ...auth.currentUser, ...profileData, requiresRole: false };
+      setUser(optimisticUser);
+      localStorage.setItem('fast_load_cache', JSON.stringify(optimisticUser));
+
+      // Fire and forget (or handle in background) to keep UI snappy
+      setDoc(userRef, profileData, { merge: true }).catch(err => {
+        console.error("Delayed profile save error:", err);
+      });
       
       if (providedName && !auth.currentUser.displayName) {
-        await updateProfile(auth.currentUser, { displayName: finalName });
+        updateProfile(auth.currentUser, { displayName: finalName }).catch(() => {});
       }
-      
-      const finalUser = { ...auth.currentUser, ...profileData };
-      setUser(finalUser);
-      localStorage.setItem('fast_load_cache', JSON.stringify(finalUser));
     } catch (error) {
       console.error("Error completing profile:", error);
     }
@@ -142,8 +147,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    let isInitialLoad = true;
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      setLoading(true);
+      // If we already have a cached user and it's the initial load, don't show loading spinner again
+      if (isInitialLoad && user) {
+        setLoading(false);
+        isInitialLoad = false;
+      } else {
+        setLoading(true);
+      }
       if (authUser) {
         try {
           const userDoc = await getDoc(doc(db, 'users', authUser.uid));

@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getSafeProfileImage } from '../lib/imageUtils';
 import { cn } from '../components/ui/Card';
+import { compressImage } from '../lib/performance';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -87,8 +88,14 @@ const Profile = () => {
 
     try {
       setUploading(true);
+      
+      // Compress image before upload (max 800px, 0.7 quality)
+      console.log("Original file size:", (file.size / 1024).toFixed(2), "KB");
+      const compressedFile = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.7 });
+      console.log("Compressed file size:", (compressedFile.size / 1024).toFixed(2), "KB");
+
       const storageRef = ref(storage, `profileImages/${user.uid}`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, compressedFile);
       const downloadURL = await getDownloadURL(storageRef);
       
       setFormData(prev => ({ ...prev, profileImage: downloadURL }));
