@@ -30,10 +30,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
+      // Clear all service workers to ensure fresh assets (Fixes persistent 404/blank page issues)
       if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let registration of registrations) {
+            registration.unregister();
+            console.log('Old Service Worker unregistered');
+          }
+        });
+        
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker registered', reg))
+            .then(reg => console.log('New Service Worker registered', reg))
             .catch(err => console.error('Service Worker registration failed', err));
         });
       }

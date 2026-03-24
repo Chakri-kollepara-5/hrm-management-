@@ -123,7 +123,10 @@ const Landing = ({ onLoginClick }) => {
 
       {/* Hero Section */}
       <motion.section 
-        style={{ opacity: heroOpacity, scale: heroScale }}
+        style={{ 
+          opacity: heroOpacity || 1, 
+          scale: heroScale || 1 
+        }}
         className="relative min-h-[95vh] flex items-center px-6 lg:px-12 pt-10 pb-20 z-10"
       >
         <div className="max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
