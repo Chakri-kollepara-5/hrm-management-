@@ -1,5 +1,5 @@
 // Service Worker for Folkvizag (PWA)
-const CACHE_NAME = 'folkvizag-v1.1'; // Increment version to force update
+const CACHE_NAME = 'folkvizag-v1.2'; // Increment version to force update
 const STATIC_ASSETS = [
   '/',
   '/index.html',

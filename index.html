@@ -30,21 +30,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
-      // Clear all service workers to ensure fresh assets (Fixes persistent 404/blank page issues)
+      // Self-Healing Strategy: Detect blank page or asset failures
+      window.onerror = function(msg, url, line, col, error) {
+        console.error("Critical error detected:", msg, "at", url);
+        // If it's a chunk load error, it's likely a stale service worker cache
+        if (msg.toLowerCase().indexOf('chunk') > -1 || msg.toLowerCase().indexOf('loading fail') > -1) {
+          if (!sessionStorage.getItem('recovery_attempted')) {
+            sessionStorage.setItem('recovery_attempted', 'true');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(regs => {
+                for(let reg of regs) reg.unregister();
+                window.location.reload(true);
+              });
+            } else {
+              window.location.reload(true);
+            }
+          }
+        }
+        return false;
+      };
+
+      // Clear all service workers to ensure fresh assets
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           for (let registration of registrations) {
             registration.unregister();
-            console.log('Old Service Worker unregistered');
           }
         });
         
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('New Service Worker registered', reg))
-            .catch(err => console.error('Service Worker registration failed', err));
+            .then(reg => console.log('New Service Worker registered'))
+            .catch(err => console.error('SW registration failed', err));
         });
       }
+
+      // Safety: If app is still blank after 8 seconds, force a hard reload
+      setTimeout(() => {
+        if (!document.getElementById('root').hasChildNodes() && !sessionStorage.getItem('recovery_attempted')) {
+           sessionStorage.setItem('recovery_attempted', 'true');
+           window.location.reload(true);
+        }
+      }, 8000);
     </script>
 
   </head>
