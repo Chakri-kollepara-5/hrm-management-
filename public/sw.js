@@ -1,29 +1,62 @@
-// Basic Service Worker for PWA
-const CACHE_NAME = 'folkvizag-v1';
-const urlsToCache = [
+// Service Worker for Folkvizag (PWA)
+const CACHE_NAME = 'folkvizag-v1.1'; // Increment version to force update
+const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/logo.png',
   '/manifest.json'
 ];
 
+// Install: Cache static assets
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
+  self.skipWaiting();
 });
 
+// Activate: Cleanup old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch: Network First for index.html/root, Stale-While-Revalidate for others
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
+  const url = new URL(event.request.url);
+
+  // For the main app entry point, always try network first
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
           return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other assets, use Stale-While-Revalidate
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      const fetchPromise = fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clonedResponse = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
         }
-        return fetch(event.request);
-      })
+        return networkResponse;
+      }).catch(() => null);
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });
