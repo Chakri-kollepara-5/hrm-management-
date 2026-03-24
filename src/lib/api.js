@@ -19,11 +19,12 @@ export const callApi = async (functionName, data = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Firebase onCall functions expect data to be wrapped in a "data" property
+  // Firebase onCall functions (or our CORS-wrapped versions) expect data in a "data" property
   const body = JSON.stringify({ data });
 
   const response = await fetch(url, {
     method: 'POST',
+    mode: 'cors',
     headers,
     body,
   });
@@ -35,7 +36,7 @@ export const callApi = async (functionName, data = {}) => {
 
   const result = await response.json();
   
-  // Firebase onCall functions return result wrapped in a "result" property
+  // Unwrap the result property (onCall convention)
   return result.result || result;
 };
 

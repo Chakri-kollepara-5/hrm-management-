@@ -15,7 +15,7 @@
 
 @layer base {
   body {
-    @apply bg-cream text-gray-800 font-inter selection:bg-saffron/30 antialiased;
+    @apply bg-cream text-gray-800 font-sans selection:bg-saffron/30 antialiased;
   }
   
   h1, h2, h3, h4, h5, h6 {
