@@ -74,7 +74,8 @@ const Profile = () => {
   };
 
   const handleImageClick = () => {
-    if (isEditing) fileInputRef.current?.click();
+    if (!isEditing) setIsEditing(true);
+    setTimeout(() => fileInputRef.current?.click(), 100);
   };
 
   const handleFileChange = async (e) => {
@@ -89,13 +90,17 @@ const Profile = () => {
     try {
       setUploading(true);
       
-      // Compress image before upload (max 800px, 0.7 quality)
-      console.log("Original file size:", (file.size / 1024).toFixed(2), "KB");
-      const compressedFile = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.7 });
-      console.log("Compressed file size:", (compressedFile.size / 1024).toFixed(2), "KB");
+      // Fallback if compression fails
+      let fileToUpload = file;
+      try {
+        console.log("Compressing image...");
+        fileToUpload = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.7 });
+      } catch (e) {
+        console.warn("Compression failed, using original file:", e);
+      }
 
       const storageRef = ref(storage, `profileImages/${user.uid}`);
-      await uploadBytes(storageRef, compressedFile);
+      await uploadBytes(storageRef, fileToUpload);
       const downloadURL = await getDownloadURL(storageRef);
       
       setFormData(prev => ({ ...prev, profileImage: downloadURL }));
