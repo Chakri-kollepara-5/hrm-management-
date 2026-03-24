@@ -32,15 +32,11 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
   const { data: allSevas, loading: sevasLoading } = useFirestore('sevas');
 
   const currentUserData = allUsers.find(u => u.id === user?.uid) || {};
+  let realTimeStreak = currentUserData.streak || 0;
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split('T')[0];
   
-  let realTimeStreak = currentUserData.streak || 0;
-  if (currentUserData.lastSadhanaDate && currentUserData.lastSadhanaDate !== today && currentUserData.lastSadhanaDate !== yesterdayStr) {
-    realTimeStreak = 0;
-  }
-
   if (currentUserData.lastSadhanaDate && currentUserData.lastSadhanaDate !== today && currentUserData.lastSadhanaDate !== yesterdayStr) {
     realTimeStreak = 0;
   }
@@ -388,7 +384,7 @@ const AdminDashboard = ({ setActiveTab, onOpenScanner }) => {
             </div>
             <div className="max-h-[410px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-saffron/20 scrollbar-track-transparent">
               <div className="space-y-4">
-                {allUsers
+                {[...allUsers]
                   .sort((a, b) => (b.score || 0) - (a.score || 0))
                   .slice(0, 20)
                   .map((d, i) => (

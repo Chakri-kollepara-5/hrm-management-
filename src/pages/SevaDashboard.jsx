@@ -263,7 +263,7 @@ const SevaDashboard = () => {
                         <div className="w-8 h-8 rounded-xl bg-saffron/10 flex items-center justify-center text-saffron">
                            <CalendarIcon size={16} />
                         </div>
-                        {new Date(seva.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {seva.date ? new Date(seva.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date TBD'}
                       </div>
                       <div className="flex items-center gap-3 text-gray-600 font-bold">
                         <div className="w-8 h-8 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
@@ -510,7 +510,7 @@ const SevaDashboard = () => {
                           {reg.userName?.charAt(0) || <UserCheck size={20} />}
                         </div>
                         <div>
-                          <p className="font-black text-gray-800 text-sm tracking-tight">{reg.userName || `User ${reg.userId.substring(0, 5)}`}</p> 
+                          <p className="font-black text-gray-800 text-sm tracking-tight">{reg.userName || `Devotee ${reg.userId?.substring(0, 5) || '...'}`}</p> 
                           <span className={`text-[10px] font-black uppercase tracking-widest ${
                             reg.status === 'completed' ? 'text-green-500' : 
                             reg.status === 'cancelled' ? 'text-red-400' : 'text-saffron'

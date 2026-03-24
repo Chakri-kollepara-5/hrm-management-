@@ -5,19 +5,6 @@ import {
   Clock, 
   MapPin, 
   Users, 
-  QrCode,
-  Calendar,
-  Filter,
-  Ticket,
-  Zap,
-  Check,
-  ChevronRight,
-  Trash2,
-  CalendarDays,
-  XCircle,
-  CheckCircle2,
-  Info,
-  Home,
   QrCode as QrIcon
 } from 'lucide-react'
 import { db } from '../lib/firebase'
@@ -225,8 +212,7 @@ const Attendance = ({ onOpenScanner }) => {
            </select>
            <button 
              onClick={() => {
-               setScanMode('attendance');
-               setShowScanner(true);
+               onOpenScanner('attendance');
              }}
              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saffron to-gold text-white rounded-xl text-sm font-bold shadow-lg hover:shadow-xl transition-all"
            >
