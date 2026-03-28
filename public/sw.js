@@ -30,6 +30,12 @@ self.addEventListener('activate', event => {
 // Fetch: Network First for index.html/root, Stale-While-Revalidate for others
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  const BACKEND_URL = 'https://folkvizag-backend-882278565284.asia-south2.run.app';
+
+  // Bypass the Service Worker for backend API calls
+  if (event.request.url.startsWith(BACKEND_URL)) {
+    return; // Let the browser handle the fetch directly
+  }
 
   // For the main app entry point, always try network first
   if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -55,9 +61,9 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
         }
         return networkResponse;
-      }).catch(() => null);
+      }).catch(() => Response.error());
 
-      return cachedResponse || fetchPromise || Response.error();
+      return cachedResponse || fetchPromise;
     })
   );
 });
