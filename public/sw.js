@@ -1,5 +1,5 @@
 // Service Worker for Folkvizag (PWA)
-const CACHE_NAME = 'folkvizag-v1.2'; // Increment version to force update
+const CACHE_NAME = 'folkvizag-v1.4'; // Increment version to force update
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -30,10 +30,15 @@ self.addEventListener('activate', event => {
 // Fetch: Network First for index.html/root, Stale-While-Revalidate for others
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  const BACKEND_URL = 'https://folkvizag-backend-882278565284.asia-south2.run.app';
+  const BACKEND_URL = 'https://hrm-backend-ten.vercel.app';
+
+  // Bypass the Service Worker for non-GET requests (e.g. POST, PUT API calls)
+  if (event.request.method !== 'GET') {
+    return;
+  }
 
   // Bypass the Service Worker for backend API calls
-  if (event.request.url.startsWith(BACKEND_URL)) {
+  if (event.request.url.startsWith(BACKEND_URL) || event.request.url.includes('googleapis.com')) {
     return; // Let the browser handle the fetch directly
   }
 
